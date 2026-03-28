@@ -85,6 +85,18 @@
                 <a-menu-item key="grade-analysis">成绩分析</a-menu-item>
               </a-sub-menu>
               
+              <a-sub-menu key="punishments">
+                <template #title>
+                  <span>
+                    <AlertOutlined />
+                    <span>惩处情况</span>
+                  </span>
+                </template>
+                <a-menu-item key="punishment-list">惩处记录列表</a-menu-item>
+                <a-menu-item key="punishment-add">新增惩处</a-menu-item>
+                <a-menu-item key="punishment-statistics">惩处统计</a-menu-item>
+              </a-sub-menu>
+              
               <a-sub-menu key="system">
                 <template #title>
                   <span>
@@ -141,6 +153,9 @@ import CourseSelection from './components/CourseSelection.vue';
 import GradeEntry from './components/GradeEntry.vue';
 import GradeAudit from './components/GradeAudit.vue';
 import GradeAnalysis from './components/GradeAnalysis.vue';
+import PunishmentList from './components/PunishmentList.vue';
+import PunishmentAdd from './components/PunishmentAdd.vue';
+import PunishmentStatistics from './components/PunishmentStatistics.vue';
 import Login from './components/Login.vue';
 import { 
   DownOutlined, 
@@ -157,7 +172,8 @@ import {
   UserSwitchOutlined,
   DatabaseOutlined,
   LockOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  AlertOutlined
 } from '@ant-design/icons-vue';
 
 export default {
@@ -172,6 +188,9 @@ export default {
     GradeEntry,
     GradeAudit,
     GradeAnalysis,
+    PunishmentList,
+    PunishmentAdd,
+    PunishmentStatistics,
     Login,
     DownOutlined,
     LogoutOutlined,
@@ -187,7 +206,8 @@ export default {
     UserSwitchOutlined,
     DatabaseOutlined,
     LockOutlined,
-    FileTextOutlined
+    FileTextOutlined,
+    AlertOutlined
   },
   data() {
     return {
@@ -253,6 +273,16 @@ export default {
           break;
         case 'grade-analysis':
           this.currentComponent = 'GradeAnalysis';
+          break;
+        // 惩处情况
+        case 'punishment-list':
+          this.currentComponent = 'PunishmentList';
+          break;
+        case 'punishment-add':
+          this.currentComponent = 'PunishmentAdd';
+          break;
+        case 'punishment-statistics':
+          this.currentComponent = 'PunishmentStatistics';
           break;
         default:
           this.currentComponent = 'StudentList';
