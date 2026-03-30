@@ -57,7 +57,6 @@
                   </span>
                 </template>
                 <a-menu-item key="student-list">学生列表</a-menu-item>
-                <a-menu-item key="student-profile">学生档案</a-menu-item>
                 <a-menu-item key="student-statistics">学生统计</a-menu-item>
               </a-sub-menu>
               
@@ -97,6 +96,19 @@
                 <a-menu-item key="punishment-statistics">惩处统计</a-menu-item>
               </a-sub-menu>
               
+              <a-sub-menu key="activities">
+                <template #title>
+                  <span>
+                    <CalendarOutlined />
+                    <span>活动管理</span>
+                  </span>
+                </template>
+                <a-menu-item key="activity-list">活动列表</a-menu-item>
+                <a-menu-item key="activity-publish">发布活动</a-menu-item>
+                <a-menu-item key="activity-registration">活动报名</a-menu-item>
+                <a-menu-item key="activity-statistics">活动统计</a-menu-item>
+              </a-sub-menu>
+              
               <a-sub-menu key="system">
                 <template #title>
                   <span>
@@ -126,7 +138,22 @@
           
           <!-- 主内容 -->
           <a-layout-content class="content">
-            <component :is="currentComponent" />
+            <!-- 学生列表组件 -->
+            <StudentList 
+              v-if="currentComponent === 'StudentList'"
+              @view-profile="handleViewProfile"
+            />
+            <!-- 学生档案组件 -->
+            <StudentProfile 
+              v-else-if="currentComponent === 'StudentProfile'"
+              :student-id="currentStudentId"
+              @back-to-list="handleBackToList"
+            />
+            <!-- 其他组件 -->
+            <component 
+              v-else
+              :is="currentComponent"
+            />
           </a-layout-content>
         </a-layout>
         
@@ -156,6 +183,10 @@ import GradeAnalysis from './components/GradeAnalysis.vue';
 import PunishmentList from './components/PunishmentList.vue';
 import PunishmentAdd from './components/PunishmentAdd.vue';
 import PunishmentStatistics from './components/PunishmentStatistics.vue';
+import ActivityList from './components/ActivityList.vue';
+import ActivityPublish from './components/ActivityPublish.vue';
+import ActivityRegistration from './components/ActivityRegistration.vue';
+import ActivityStatistics from './components/ActivityStatistics.vue';
 import Login from './components/Login.vue';
 import { 
   DownOutlined, 
@@ -173,7 +204,8 @@ import {
   DatabaseOutlined,
   LockOutlined,
   FileTextOutlined,
-  AlertOutlined
+  AlertOutlined,
+  CalendarOutlined
 } from '@ant-design/icons-vue';
 
 export default {
@@ -191,6 +223,10 @@ export default {
     PunishmentList,
     PunishmentAdd,
     PunishmentStatistics,
+    ActivityList,
+    ActivityPublish,
+    ActivityRegistration,
+    ActivityStatistics,
     Login,
     DownOutlined,
     LogoutOutlined,
@@ -207,7 +243,8 @@ export default {
     DatabaseOutlined,
     LockOutlined,
     FileTextOutlined,
-    AlertOutlined
+    AlertOutlined,
+    CalendarOutlined
   },
   data() {
     return {
@@ -216,7 +253,8 @@ export default {
       currentMenu: 'dashboard',
       selectedSideMenu: 'student-list',
       collapsed: false,
-      currentComponent: 'StudentList'
+      currentComponent: 'StudentList',
+      currentStudentId: null
     };
   },
   mounted() {
@@ -242,15 +280,17 @@ export default {
     },
     handleSideMenuClick({ key }) {
       this.selectedSideMenu = key;
+      this.currentStudentId = null; // 重置当前学生 ID
       // 根据选择的菜单项切换组件
       switch (key) {
         // 学生管理
         case 'student-list':
           this.currentComponent = 'StudentList';
           break;
-        case 'student-profile':
-          this.currentComponent = 'StudentProfile';
-          break;
+        // 学生档案不再作为独立菜单项，只能通过学生列表进入
+        // case 'student-profile':
+        //   this.currentComponent = 'StudentProfile';
+        //   break;
         case 'student-statistics':
           this.currentComponent = 'StudentStatistics';
           break;
@@ -284,9 +324,36 @@ export default {
         case 'punishment-statistics':
           this.currentComponent = 'PunishmentStatistics';
           break;
+        // 活动管理
+        case 'activity-list':
+          this.currentComponent = 'ActivityList';
+          break;
+        case 'activity-publish':
+          this.currentComponent = 'ActivityPublish';
+          break;
+        case 'activity-registration':
+          this.currentComponent = 'ActivityRegistration';
+          break;
+        case 'activity-statistics':
+          this.currentComponent = 'ActivityStatistics';
+          break;
         default:
           this.currentComponent = 'StudentList';
       }
+    },
+    handleViewProfile(student) {
+      // 切换到学生档案页面并传递学生 ID
+      this.currentStudentId = student.id;
+      this.currentComponent = 'StudentProfile';
+      this.selectedSideMenu = 'student-profile';
+    },
+    handleBackToList() {
+      console.log('收到返回列表面单，准备切换...');
+      // 返回学生列表页面
+      this.currentComponent = 'StudentList';
+      this.selectedSideMenu = 'student-list';
+      this.currentStudentId = null;
+      console.log('已切换到学生列表，当前组件:', this.currentComponent);
     }
   }
 };

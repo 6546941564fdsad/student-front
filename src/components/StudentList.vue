@@ -104,22 +104,37 @@
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'action'">
             <a-space size="small">
+              <a-button color="blue" size="small" @click="viewProfile(record)">
+                <template #icon><user-outlined /></template>
+                档案
+              </a-button>
               <a-button type="primary" size="small" @click="showEditForm(record)">
                 <template #icon><form-outlined /></template>
                 编辑
               </a-button>
-              <a-button danger size="small" @click="deleteStudent(record.id)">
-                <template #icon><delete-outlined /></template>
-                删除
-              </a-button>
-              <a-button size="small" @click="viewProfile(record)">
-                <template #icon><user-outlined /></template>
-                档案
-              </a-button>
-              <a-button size="small" @click="viewPunishments(record)">
-                <template #icon><alert-outlined /></template>
-                惩处记录
-              </a-button>
+              <a-popconfirm
+                title="确定要删除这个学生吗？"
+                ok-text="确定"
+                cancel-text="取消"
+                @confirm="confirmDeleteStudent(record.id)"
+              >
+                <a-button danger size="small">
+                  <template #icon><delete-outlined /></template>
+                  删除
+                </a-button>
+              </a-popconfirm>
+              <a-tooltip title="查看该学生奖惩 / 欠费记录">
+                <a-button size="small" @click="viewPunishments(record)">
+                  <template #icon><alert-outlined /></template>
+                  惩处记录
+                </a-button>
+              </a-tooltip>
+              <a-tooltip title="查看该学生参与的活动及获奖情况">
+                <a-button size="small" @click="viewActivities(record)">
+                  <template #icon><calendar-outlined /></template>
+                  活动记录
+                </a-button>
+              </a-tooltip>
             </a-space>
           </template>
         </template>
@@ -159,7 +174,8 @@ import {
   DownloadOutlined,
   UserOutlined,
   ReloadOutlined,
-  AlertOutlined
+  AlertOutlined,
+  CalendarOutlined
 } from '@ant-design/icons-vue';
 
 export default {
@@ -174,7 +190,8 @@ export default {
     DownloadOutlined,
     UserOutlined,
     ReloadOutlined,
-    AlertOutlined
+    AlertOutlined,
+    CalendarOutlined
   },
   data() {
     return {
@@ -367,19 +384,26 @@ export default {
       });
     },
     viewProfile(record) {
-      // 跳转到学生档案页面
+      // 切换到学生档案页面
       console.log('查看学生档案:', record);
-      // 这里可以添加路由跳转逻辑
+      // 触发事件，通知 App.vue 切换到档案页面并传递学生 ID
+      this.$emit('view-profile', record);
     },
     viewPunishments(record) {
       // 跳转到学生惩处记录
       console.log('查看学生惩处记录:', record);
       // 这里可以添加路由跳转逻辑，传递学生信息
-      // 例如: this.$router.push({ path: '/punishment-list', query: { studentId: record.id } });
+      // 例如：this.$router.push({ path: '/punishment-list', query: { studentId: record.id } });
       this.$message.info(`查看 ${record.name} 的惩处记录`);
     },
+    viewActivities(record) {
+      // 查看学生活动记录 - 通过档案页面的活动标签页展示
+      console.log('查看学生活动记录:', record);
+      this.$emit('view-profile', record);
+      this.$message.info(`查看 ${record.name} 的活动参与记录`);
+    },
     handleDrawerOk() {
-      // 触发 StudentForm 的表单提交
+      // 触发 StudentForm 的表单提交和验证
       if (this.$refs.studentFormRef) {
         this.$refs.studentFormRef.handleSubmit();
       }
@@ -409,26 +433,22 @@ export default {
       this.showForm = false;
       this.currentStudent = null;
     },
+    confirmDeleteStudent(id) {
+      // 执行删除操作（已经过二次确认）
+      this.deleteStudent(id);
+    },
     async deleteStudent(id) {
-      this.$confirm({
-        title: '删除确认',
-        content: '确定要删除这个学生吗？',
-        okText: '确定',
-        cancelText: '取消',
-        onOk: async () => {
-          this.loading = true;
-          try {
-            await studentApi.deleteStudent(id);
-            this.$message.success('删除学生成功');
-            await this.fetchStudents();
-          } catch (error) {
-            console.error('删除学生失败:', error);
-            this.$message.error('删除学生失败');
-          } finally {
-            this.loading = false;
-          }
-        }
-      });
+      this.loading = true;
+      try {
+        await studentApi.deleteStudent(id);
+        this.$message.success('删除学生成功');
+        await this.fetchStudents();
+      } catch (error) {
+        console.error('删除学生失败:', error);
+        this.$message.error('删除学生失败');
+      } finally {
+        this.loading = false;
+      }
     },
     handleSearch(value) {
       this.searchText = value;

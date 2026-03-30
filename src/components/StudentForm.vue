@@ -40,6 +40,7 @@
       <a-form-item
         label="学院"
         name="college"
+        :rules="[{ required: true, message: '请输入学院' }]"
       >
         <a-input :value="form.college" @input="form.college = $event.target.value" placeholder="请输入学院" />
       </a-form-item>
@@ -47,6 +48,7 @@
       <a-form-item
         label="专业"
         name="major"
+        :rules="[{ required: true, message: '请输入专业' }]"
       >
         <a-input :value="form.major" @input="form.major = $event.target.value" placeholder="请输入专业" />
       </a-form-item>
@@ -54,6 +56,7 @@
       <a-form-item
         label="班级"
         name="className"
+        :rules="[{ required: true, message: '请输入班级' }]"
       >
         <a-input :value="form.className" @input="form.className = $event.target.value" placeholder="请输入班级" />
       </a-form-item>
@@ -61,6 +64,7 @@
       <a-form-item
         label="年级"
         name="grade"
+        :rules="[{ required: true, message: '请输入年级' }]"
       >
         <a-input :value="form.grade" @input="form.grade = $event.target.value" placeholder="请输入年级" />
       </a-form-item>
@@ -68,6 +72,7 @@
       <a-form-item
         label="状态"
         name="status"
+        :rules="[{ required: true, message: '请选择状态' }]"
       >
         <a-select :value="form.status" @change="form.status = $event" placeholder="请选择状态">
           <a-select-option value="在校">在校</a-select-option>
@@ -96,7 +101,14 @@
         label="入学日期"
         name="enrollmentDate"
       >
-        <a-date-picker :value="form.enrollmentDate" @change="form.enrollmentDate = $event" style="width: 100%" />
+        <a-date-picker 
+          v-model="form.enrollmentDate" 
+          placeholder="选择入学日期" 
+          style="width: 100%" 
+          format="YYYY-MM-DD"
+          :allow-clear="true"
+          :get-popup-container="trigger => trigger.parentNode"
+        />
       </a-form-item>
     </a-form>
   </div>
@@ -154,7 +166,7 @@ export default {
   methods: {
     initForm() {
       if (this.student) {
-        // 先将Proxy对象转换为普通对象，确保数据正确
+        // 先将 Proxy 对象转换为普通对象，确保数据正确
         const studentData = JSON.parse(JSON.stringify(this.student));
         console.log('转换后的学生数据:', studentData);
         
@@ -173,9 +185,9 @@ export default {
         this.form.enrollmentDate = studentData.enrollmentDate ? new Date(studentData.enrollmentDate) : null;
         
         console.log('表单数据:', this.form);
-        console.log('表单name:', this.form.name);
-        console.log('表单age:', this.form.age);
-        console.log('表单gender:', this.form.gender);
+        console.log('表单 name:', this.form.name);
+        console.log('表单 age:', this.form.age);
+        console.log('表单 gender:', this.form.gender);
       } else {
         this.resetForm();
       }
@@ -198,6 +210,25 @@ export default {
       };
     },
     handleSubmit() {
+      // 使用 formRef 进行表单验证
+      if (!this.formRef) {
+        this.formRef = this.$refs.formRef;
+      }
+      
+      if (this.formRef) {
+        this.formRef.validate().then(() => {
+          // 验证通过，提交数据
+          this.submitForm();
+        }).catch(error => {
+          console.error('表单验证失败:', error);
+          this.$message.error('请完善必填信息');
+        });
+      } else {
+        // 如果没有 formRef，直接提交（兼容旧逻辑）
+        this.submitForm();
+      }
+    },
+    submitForm() {
       // 转换日期格式
       const formData = {
         ...this.form,
