@@ -5,7 +5,7 @@
       <a-layout class="app-layout">
         <!-- 头部 -->
         <a-layout-header class="header">
-          <div class="logo">学生管理系统</div>
+          <div class="logo">教务系统</div>
           <a-menu mode="horizontal" :selected-keys="[currentMenu]" class="menu">
             <a-menu-item key="dashboard">
               <template #icon><DashboardOutlined /></template>
@@ -138,29 +138,31 @@
           
           <!-- 主内容 -->
           <a-layout-content class="content">
-            <!-- 学生列表组件 -->
-            <StudentList 
-              v-if="currentComponent === 'StudentList'"
-              @view-profile="handleViewProfile"
-            />
-            <!-- 学生档案组件 -->
-            <StudentProfile 
-              v-else-if="currentComponent === 'StudentProfile'"
-              :student-id="currentStudentId"
-              @back-to-list="handleBackToList"
-            />
-            <!-- 其他组件 -->
-            <component 
-              v-else
-              :is="currentComponent"
-            />
+            <div :key="contentKey">
+              <!-- 学生列表组件 -->
+              <StudentList 
+                v-if="currentComponent === 'StudentList'"
+                @view-profile="handleViewProfile"
+              />
+              <!-- 学生档案组件 -->
+              <StudentProfile 
+                v-else-if="currentComponent === 'StudentProfile'"
+                :student-id="currentStudentId"
+                @back-to-list="handleBackToList"
+              />
+              <!-- 其他组件 -->
+              <component 
+                v-else
+                :is="currentComponent"
+              />
+            </div>
           </a-layout-content>
         </a-layout>
         
         <!-- 脚 -->
         <a-layout-footer class="footer">
           <div class="footer-content">
-            <p>© 2026 学生管理系统 版权所有</p>
+            <p>© 2026 教务系统 版权所有</p>
             <p>版本 1.0.0</p>
           </div>
         </a-layout-footer>
@@ -187,6 +189,10 @@ import ActivityList from './components/ActivityList.vue';
 import ActivityPublish from './components/ActivityPublish.vue';
 import ActivityRegistration from './components/ActivityRegistration.vue';
 import ActivityStatistics from './components/ActivityStatistics.vue';
+import UserManagement from './components/UserManagement.vue';
+import PermissionManagement from './components/PermissionManagement.vue';
+import OperationLog from './components/OperationLog.vue';
+import DataBackup from './components/DataBackup.vue';
 import Login from './components/Login.vue';
 import { 
   DownOutlined, 
@@ -227,6 +233,10 @@ export default {
     ActivityPublish,
     ActivityRegistration,
     ActivityStatistics,
+    UserManagement,
+    PermissionManagement,
+    OperationLog,
+    DataBackup,
     Login,
     DownOutlined,
     LogoutOutlined,
@@ -254,12 +264,13 @@ export default {
       selectedSideMenu: 'student-list',
       collapsed: false,
       currentComponent: 'StudentList',
-      currentStudentId: null
+      currentStudentId: null,
+      contentKey: 0
     };
   },
   mounted() {
-    // 检查本地存储中是否有用户信息
-    this.checkLoginStatus();
+    // 不自动登录，始终显示登录页面
+    // this.checkLoginStatus();
   },
   methods: {
     checkLoginStatus() {
@@ -270,7 +281,12 @@ export default {
       }
     },
     handleLoginSuccess() {
-      this.checkLoginStatus();
+      // 登录成功后设置状态
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        this.user = JSON.parse(userStr);
+        this.isLoggedIn = true;
+      }
     },
     logout() {
       // 清除本地存储中的用户信息
@@ -281,65 +297,89 @@ export default {
     handleSideMenuClick({ key }) {
       this.selectedSideMenu = key;
       this.currentStudentId = null; // 重置当前学生 ID
-      // 根据选择的菜单项切换组件
-      switch (key) {
-        // 学生管理
-        case 'student-list':
-          this.currentComponent = 'StudentList';
-          break;
-        // 学生档案不再作为独立菜单项，只能通过学生列表进入
-        // case 'student-profile':
-        //   this.currentComponent = 'StudentProfile';
-        //   break;
-        case 'student-statistics':
-          this.currentComponent = 'StudentStatistics';
-          break;
-        // 课程管理
-        case 'course-list':
-          this.currentComponent = 'CourseList';
-          break;
-        case 'course-scheduling':
-          this.currentComponent = 'CourseScheduling';
-          break;
-        case 'course-selection':
-          this.currentComponent = 'CourseSelection';
-          break;
-        // 成绩管理
-        case 'grade-entry':
-          this.currentComponent = 'GradeEntry';
-          break;
-        case 'grade-audit':
-          this.currentComponent = 'GradeAudit';
-          break;
-        case 'grade-analysis':
-          this.currentComponent = 'GradeAnalysis';
-          break;
-        // 惩处情况
-        case 'punishment-list':
-          this.currentComponent = 'PunishmentList';
-          break;
-        case 'punishment-add':
-          this.currentComponent = 'PunishmentAdd';
-          break;
-        case 'punishment-statistics':
-          this.currentComponent = 'PunishmentStatistics';
-          break;
-        // 活动管理
-        case 'activity-list':
-          this.currentComponent = 'ActivityList';
-          break;
-        case 'activity-publish':
-          this.currentComponent = 'ActivityPublish';
-          break;
-        case 'activity-registration':
-          this.currentComponent = 'ActivityRegistration';
-          break;
-        case 'activity-statistics':
-          this.currentComponent = 'ActivityStatistics';
-          break;
-        default:
-          this.currentComponent = 'StudentList';
-      }
+      
+      // 先更新 key，让 Vue 销毁旧组件
+      this.contentKey++;
+      
+      // 使用 nextTick 确保 DOM 更新后再设置新组件
+      this.$nextTick(() => {
+        // 根据选择的菜单项切换组件
+        switch (key) {
+          // 首页仪表盘
+          case 'dashboard':
+            this.currentComponent = 'StudentList';
+            break;
+          // 学生管理
+          case 'student-list':
+            this.currentComponent = 'StudentList';
+            break;
+          // 学生档案不再作为独立菜单项，只能通过学生列表进入
+          // case 'student-profile':
+          //   this.currentComponent = 'StudentProfile';
+          //   break;
+          case 'student-statistics':
+            this.currentComponent = 'StudentStatistics';
+            break;
+          // 课程管理
+          case 'course-list':
+            this.currentComponent = 'CourseList';
+            break;
+          case 'course-scheduling':
+            this.currentComponent = 'CourseScheduling';
+            break;
+          case 'course-selection':
+            this.currentComponent = 'CourseSelection';
+            break;
+          // 成绩管理
+          case 'grade-entry':
+            this.currentComponent = 'GradeEntry';
+            break;
+          case 'grade-audit':
+            this.currentComponent = 'GradeAudit';
+            break;
+          case 'grade-analysis':
+            this.currentComponent = 'GradeAnalysis';
+            break;
+          // 惩处情况
+          case 'punishment-list':
+            this.currentComponent = 'PunishmentList';
+            break;
+          case 'punishment-add':
+            this.currentComponent = 'PunishmentAdd';
+            break;
+          case 'punishment-statistics':
+            this.currentComponent = 'PunishmentStatistics';
+            break;
+          // 活动管理
+          case 'activity-list':
+            this.currentComponent = 'ActivityList';
+            break;
+          case 'activity-publish':
+            this.currentComponent = 'ActivityPublish';
+            break;
+          case 'activity-registration':
+            this.currentComponent = 'ActivityRegistration';
+            break;
+          case 'activity-statistics':
+            this.currentComponent = 'ActivityStatistics';
+            break;
+          // 系统管理
+          case 'user-management':
+            this.currentComponent = 'UserManagement';
+            break;
+          case 'permission-management':
+            this.currentComponent = 'PermissionManagement';
+            break;
+          case 'operation-log':
+            this.currentComponent = 'OperationLog';
+            break;
+          case 'data-backup':
+            this.currentComponent = 'DataBackup';
+            break;
+          default:
+            this.currentComponent = 'StudentList';
+        }
+      });
     },
     handleViewProfile(student) {
       // 切换到学生档案页面并传递学生 ID

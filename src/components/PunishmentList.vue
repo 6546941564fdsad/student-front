@@ -429,7 +429,7 @@ export default {
     },
     handleDrawerOk() {
       if (this.$refs.punishmentFormRef) {
-        this.$refs.punishmentFormRef.handleSubmit();
+        this.$refs.punishmentFormRef.handleSave();
       }
     },
     async savePunishment(punishmentData) {

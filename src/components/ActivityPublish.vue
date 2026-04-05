@@ -46,10 +46,10 @@
             <a-form-item label="活动时间" name="activityTime" :rules="[{ required: true, message: '请选择活动时间' }]">
               <a-date-picker 
                 v-model:value="form.activityTime" 
-                show-time
                 placeholder="选择活动时间"
                 style="width: 100%"
                 format="YYYY-MM-DD HH:mm:ss"
+                value-format="YYYY-MM-DD HH:mm:ss"
               />
             </a-form-item>
           </a-col>
@@ -70,10 +70,10 @@
             <a-form-item label="报名开始时间" name="registrationStartTime">
               <a-date-picker 
                 v-model:value="form.registrationStartTime" 
-                show-time
                 placeholder="可选"
                 style="width: 100%"
                 format="YYYY-MM-DD HH:mm:ss"
+                value-format="YYYY-MM-DD HH:mm:ss"
               />
             </a-form-item>
           </a-col>
@@ -81,10 +81,10 @@
             <a-form-item label="报名截止" name="registrationEndTime">
               <a-date-picker 
                 v-model:value="form.registrationEndTime" 
-                show-time
                 placeholder="可选"
                 style="width: 100%"
                 format="YYYY-MM-DD HH:mm:ss"
+                value-format="YYYY-MM-DD HH:mm:ss"
               />
             </a-form-item>
           </a-col>

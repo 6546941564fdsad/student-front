@@ -102,7 +102,7 @@
         name="enrollmentDate"
       >
         <a-date-picker 
-          v-model="form.enrollmentDate" 
+          v-model:value="form.enrollmentDate"
           placeholder="选择入学日期" 
           style="width: 100%" 
           format="YYYY-MM-DD"

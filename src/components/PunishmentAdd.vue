@@ -11,18 +11,20 @@
 </template>
 
 <script>
+import PunishmentForm from './PunishmentForm.vue';
+
 export default {
   name: 'PunishmentAdd',
   components: {
-    PunishmentForm: () => import('./PunishmentForm.vue')
+    PunishmentForm
   },
   methods: {
     handleSave(punishmentData) {
       // 保存惩处记录
       console.log('新增惩处:', punishmentData);
       this.$message.success('新增惩处成功');
-      // 可以跳转到惩处记录列表
-      this.$router.push('/punishment-list');
+      // 触发返回父组件，切换到惩处列表
+      this.$emit('back-to-list');
     }
   }
 };

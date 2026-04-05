@@ -15,13 +15,13 @@
           <a-date-picker 
             placeholder="选择开始日期" 
             style="width: 150px" 
-            v-model="startDate"
+            v-model:value="startDate"
             @change="updateStatistics"
           />
           <a-date-picker 
             placeholder="选择结束日期" 
             style="width: 150px" 
-            v-model="endDate"
+            v-model:value="endDate"
             @change="updateStatistics"
           />
           
