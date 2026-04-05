@@ -16,7 +16,7 @@
         <div class="logo">
           <user-outlined style="font-size: 48px; color: #1890ff;" />
         </div>
-        <h1>学生管理系统</h1>
+        <h1>教务系统</h1>
         <p>请登录以访问系统</p>
       </div>
       
@@ -75,7 +75,7 @@
         />
         
         <div class="login-footer">
-          <p>© 2026 学生管理系统</p>
+          <p>© 2026 教务系统</p>
         </div>
       </a-form>
     </div>
