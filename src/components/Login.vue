@@ -27,7 +27,7 @@
           class="form-item"
         >
           <a-input 
-            v-model:value="form.username" 
+            v-model="form.username" 
             placeholder="用户名"
             size="large"
           >
@@ -43,7 +43,7 @@
           class="form-item"
         >
           <a-input-password 
-            v-model:value="form.password" 
+            v-model="form.password" 
             placeholder="密码"
             size="large"
           >
