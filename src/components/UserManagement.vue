@@ -1,205 +1,139 @@
 <!-- src/components/UserManagement.vue -->
 <template>
   <div class="user-management">
-    <a-card title="用户管理">
-      <!-- 工具栏 -->
-      <div class="toolbar">
-        <a-space>
-          <a-input-search 
-            placeholder="搜索用户名/姓名" 
-            style="width: 300px" 
-            @search="handleSearch"
-          />
-          <a-select placeholder="用户角色" style="width: 150px" @change="handleRoleFilter">
-            <a-option value="">全部</a-option>
-            <a-option value="管理员">管理员</a-option>
-            <a-option value="教师">教师</a-option>
-            <a-option value="学生">学生</a-option>
-          </a-select>
-        </a-space>
+    <a-card :bordered="false">
+      <div class="page-header">
+        <h2 class="page-title">用户管理</h2>
         <a-button type="primary" @click="showAddModal">
-          <template #icon><plus-outlined /></template>
+          <template #icon><PlusOutlined /></template>
           新增用户
         </a-button>
       </div>
-      
-      <!-- 用户列表 -->
-      <a-table :columns="columns" :data-source="filteredUsers" row-key="id" :loading="loading">
+
+      <a-table
+        :columns="columns"
+        :data-source="users"
+        :pagination="pagination"
+      >
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'role'">
             <a-tag :color="getRoleColor(record.role)">{{ record.role }}</a-tag>
           </template>
           <template v-if="column.key === 'status'">
-            <a-tag :color="record.status === '启用' ? 'green' : 'red'">{{ record.status }}</a-tag>
+            <a-badge :status="record.status === '启用' ? 'success' : 'default'" :text="record.status" />
           </template>
           <template v-if="column.key === 'action'">
-            <a-space size="small">
-              <a-button type="primary" size="small" @click="editUser(record)">
-                <template #icon><form-outlined /></template>
-                编辑
-              </a-button>
-              <a-button danger size="small" @click="deleteUser(record.id)">
-                <template #icon><delete-outlined /></template>
-                删除
+            <a-space>
+              <a-button type="link" size="small" @click="editUser(record)">编辑</a-button>
+              <a-button type="link" size="small" @click="resetPassword(record)">重置密码</a-button>
+              <a-button type="link" danger size="small" @click="toggleStatus(record)">
+                {{ record.status === '启用' ? '禁用' : '启用' }}
               </a-button>
             </a-space>
           </template>
         </template>
       </a-table>
     </a-card>
-    
-    <!-- 新增/编辑用户对话框 -->
-    <a-modal
-      :title="currentUser ? '编辑用户' : '新增用户'"
-      :open="showModal"
-      @ok="handleModalOk"
-      @cancel="handleModalCancel"
-    >
-      <a-form :model="userForm" layout="vertical">
-        <a-form-item label="用户名">
-          <a-input v-model:value="userForm.username" placeholder="请输入用户名" />
-        </a-form-item>
-        <a-form-item label="姓名">
-          <a-input v-model:value="userForm.name" placeholder="请输入姓名" />
-        </a-form-item>
-        <a-form-item label="角色">
-          <a-select v-model:value="userForm.role" placeholder="请选择角色">
-            <a-option value="管理员">管理员</a-option>
-            <a-option value="教师">教师</a-option>
-            <a-option value="学生">学生</a-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item label="邮箱">
-          <a-input v-model:value="userForm.email" placeholder="请输入邮箱" />
-        </a-form-item>
-        <a-form-item label="状态">
-          <a-select v-model:value="userForm.status" placeholder="请选择状态">
-            <a-option value="启用">启用</a-option>
-            <a-option value="禁用">禁用</a-option>
-          </a-select>
-        </a-form-item>
-      </a-form>
-    </a-modal>
   </div>
 </template>
 
 <script>
-import { PlusOutlined, FormOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import { PlusOutlined } from '@ant-design/icons-vue';
 
 export default {
   name: 'UserManagement',
-  components: { PlusOutlined, FormOutlined, DeleteOutlined },
+  components: {
+    PlusOutlined
+  },
   data() {
     return {
-      loading: false,
-      showModal: false,
-      currentUser: null,
-      searchText: '',
-      roleFilter: '',
-      users: [
-        { id: 1, username: 'admin', name: '系统管理员', role: '管理员', email: 'admin@example.com', status: '启用' },
-        { id: 2, username: 'teacher01', name: '张老师', role: '教师', email: 'teacher01@example.com', status: '启用' },
-        { id: 3, username: 'student01', name: '张三', role: '学生', email: 'student01@example.com', status: '启用' }
-      ],
-      userForm: {
-        username: '',
-        name: '',
-        role: '',
-        email: '',
-        status: '启用'
+      pagination: {
+        current: 1,
+        pageSize: 10,
+        total: 0
       },
       columns: [
-        { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
-        { title: '用户名', dataIndex: 'username', key: 'username', width: 150 },
-        { title: '姓名', dataIndex: 'name', key: 'name', width: 120 },
-        { title: '角色', dataIndex: 'role', key: 'role', width: 120 },
-        { title: '邮箱', dataIndex: 'email', key: 'email', width: 200 },
-        { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
-        { title: '操作', key: 'action', width: 200 }
+        { title: '用户名', dataIndex: 'username', key: 'username', width: 120 },
+        { title: '姓名', dataIndex: 'name', key: 'name', width: 100 },
+        { title: '角色', key: 'role', width: 120 },
+        { title: '所属部门', dataIndex: 'department', key: 'department' },
+        { title: '手机号', dataIndex: 'phone', key: 'phone', width: 130 },
+        { title: '状态', key: 'status', width: 100 },
+        { title: '最后登录', dataIndex: 'lastLogin', key: 'lastLogin', width: 160 },
+        { title: '操作', key: 'action', width: 220, fixed: 'right' }
+      ],
+      users: [
+        {
+          id: 1,
+          username: 'admin',
+          name: '系统管理员',
+          role: '超级管理员',
+          department: '信息中心',
+          phone: '13800138000',
+          status: '启用',
+          lastLogin: '2025-03-06 10:30:00'
+        },
+        {
+          id: 2,
+          username: 'teacher01',
+          name: '王老师',
+          role: '教师',
+          department: '大数据与计算机学院',
+          phone: '13900139000',
+          status: '启用',
+          lastLogin: '2025-03-05 16:20:00'
+        },
+        {
+          id: 3,
+          username: 'student01',
+          name: '张同学',
+          role: '学生',
+          department: '计科2401班',
+          phone: '13700137000',
+          status: '启用',
+          lastLogin: '2025-03-04 09:15:00'
+        }
       ]
     };
   },
-  computed: {
-    filteredUsers() {
-      return this.users.filter(user => {
-        const matchesSearch = !this.searchText || 
-          user.username.includes(this.searchText) || 
-          user.name.includes(this.searchText);
-        const matchesRole = !this.roleFilter || user.role === this.roleFilter;
-        return matchesSearch && matchesRole;
-      });
-    }
+  mounted() {
+    this.pagination.total = this.users.length;
   },
   methods: {
-    handleSearch(value) {
-      this.searchText = value;
-    },
-    handleRoleFilter(value) {
-      this.roleFilter = value;
+    getRoleColor(role) {
+      const colorMap = {
+        '超级管理员': 'red',
+        '管理员': 'orange',
+        '教师': 'blue',
+        '学生': 'green'
+      };
+      return colorMap[role] || 'default';
     },
     showAddModal() {
-      this.currentUser = null;
-      this.userForm = {
-        username: '',
-        name: '',
-        role: '',
-        email: '',
-        status: '启用'
-      };
-      this.showModal = true;
+      this.$message.info('新增用户功能');
     },
     editUser(user) {
-      this.currentUser = user;
-      this.userForm = { ...user };
-      this.showModal = true;
+      this.$message.info(`编辑用户：${user.name}`);
     },
-    handleModalOk() {
-      if (!this.userForm.username || !this.userForm.name || !this.userForm.role) {
-        this.$message.error('请填写完整信息');
-        return;
-      }
-      
-      if (this.currentUser) {
-        // 编辑用户
-        const index = this.users.findIndex(u => u.id === this.currentUser.id);
-        if (index !== -1) {
-          this.users[index] = { ...this.users[index], ...this.userForm };
-        }
-        this.$message.success('编辑用户成功');
-      } else {
-        // 新增用户
-        const newUser = {
-          ...this.userForm,
-          id: this.users.length + 1
-        };
-        this.users.push(newUser);
-        this.$message.success('新增用户成功');
-      }
-      
-      this.showModal = false;
-    },
-    handleModalCancel() {
-      this.showModal = false;
-    },
-    deleteUser(id) {
+    resetPassword(user) {
       this.$confirm({
-        title: '删除确认',
-        content: '确定要删除该用户吗？',
-        okText: '确定',
-        cancelText: '取消',
+        title: '确认重置密码',
+        content: `确定要重置用户 ${user.name} 的密码吗？`,
         onOk: () => {
-          this.users = this.users.filter(u => u.id !== id);
-          this.$message.success('删除用户成功');
+          this.$message.success('密码已重置为默认密码');
         }
       });
     },
-    getRoleColor(role) {
-      switch (role) {
-        case '管理员': return 'red';
-        case '教师': return 'blue';
-        case '学生': return 'green';
-        default: return 'default';
-      }
+    toggleStatus(user) {
+      const action = user.status === '启用' ? '禁用' : '启用';
+      this.$confirm({
+        title: `确认${action}`,
+        content: `确定要${action}用户 ${user.name} 吗？`,
+        onOk: () => {
+          user.status = user.status === '启用' ? '禁用' : '启用';
+          this.$message.success(`${action}成功`);
+        }
+      });
     }
   }
 };
@@ -207,13 +141,20 @@ export default {
 
 <style scoped>
 .user-management {
-  padding: 20px;
+  padding: 0;
 }
 
-.toolbar {
+.page-header {
+  margin-bottom: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
 }
 </style>

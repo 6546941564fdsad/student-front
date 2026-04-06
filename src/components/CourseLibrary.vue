@@ -1,0 +1,177 @@
+<!-- src/components/CourseLibrary.vue -->
+<template>
+  <div class="course-library">
+    <a-card :bordered="false">
+      <div class="page-header">
+        <h2 class="page-title">课程库管理</h2>
+        <a-button type="primary" @click="showAddModal">
+          <template #icon><PlusOutlined /></template>
+          新增课程
+        </a-button>
+      </div>
+
+      <a-form layout="inline" class="filter-form">
+        <a-form-item label="课程编号">
+          <a-input v-model:value="filters.courseCode" placeholder="请输入课程编号" />
+        </a-form-item>
+        <a-form-item label="课程名称">
+          <a-input v-model:value="filters.courseName" placeholder="请输入课程名称" />
+        </a-form-item>
+        <a-form-item label="课程类别">
+          <a-select v-model:value="filters.category" style="width: 180px" allow-clear>
+            <a-select-option value="专业基础课">专业基础课</a-select-option>
+            <a-select-option value="专业课">专业课</a-select-option>
+            <a-select-option value="公共课">公共课</a-select-option>
+            <a-select-option value="通识课">通识课</a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item>
+          <a-button type="primary" @click="handleSearch">查询</a-button>
+          <a-button style="margin-left: 8px" @click="handleReset">重置</a-button>
+        </a-form-item>
+      </a-form>
+
+      <a-table
+        :columns="columns"
+        :data-source="courses"
+        :pagination="pagination"
+        :loading="loading"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'action'">
+            <a-space>
+              <a-button type="link" size="small" @click="viewCourse(record)">查看</a-button>
+              <a-button type="link" size="small" @click="editCourse(record)">编辑</a-button>
+              <a-button type="link" danger size="small" @click="deleteCourse(record)">删除</a-button>
+            </a-space>
+          </template>
+        </template>
+      </a-table>
+    </a-card>
+  </div>
+</template>
+
+<script>
+import { PlusOutlined } from '@ant-design/icons-vue';
+
+export default {
+  name: 'CourseLibrary',
+  components: {
+    PlusOutlined
+  },
+  data() {
+    return {
+      filters: {
+        courseCode: '',
+        courseName: '',
+        category: ''
+      },
+      loading: false,
+      pagination: {
+        current: 1,
+        pageSize: 10,
+        total: 0
+      },
+      columns: [
+        { title: '课程编号', dataIndex: 'courseCode', key: 'courseCode', width: 120 },
+        { title: '课程名称', dataIndex: 'courseName', key: 'courseName' },
+        { title: '课程类别', dataIndex: 'category', key: 'category', width: 120 },
+        { title: '学分', dataIndex: 'credits', key: 'credits', width: 80 },
+        { title: '总学时', dataIndex: 'totalHours', key: 'totalHours', width: 80 },
+        { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
+        { title: '操作', key: 'action', width: 180, fixed: 'right' }
+      ],
+      courses: []
+    };
+  },
+  mounted() {
+    this.loadCourses();
+  },
+  methods: {
+    loadCourses() {
+      this.loading = true;
+      setTimeout(() => {
+        this.courses = [
+          {
+            id: 1,
+            courseCode: 'U0204026',
+            courseName: 'C语言程序设计',
+            category: '专业基础课',
+            credits: 4.0,
+            totalHours: 64,
+            status: '启用'
+          },
+          {
+            id: 2,
+            courseCode: 'U0704079',
+            courseName: '大学英语B1',
+            category: '公共课',
+            credits: 4.0,
+            totalHours: 64,
+            status: '启用'
+          }
+        ];
+        this.pagination.total = this.courses.length;
+        this.loading = false;
+      }, 500);
+    },
+    handleSearch() {
+      this.pagination.current = 1;
+      this.loadCourses();
+    },
+    handleReset() {
+      this.filters = {
+        courseCode: '',
+        courseName: '',
+        category: ''
+      };
+      this.handleSearch();
+    },
+    showAddModal() {
+      this.$message.info('新增课程功能');
+    },
+    viewCourse(course) {
+      this.$message.info(`查看课程：${course.courseName}`);
+    },
+    editCourse(course) {
+      this.$message.info(`编辑课程：${course.courseName}`);
+    },
+    deleteCourse(course) {
+      this.$confirm({
+        title: '确认删除',
+        content: `确定要删除课程 ${course.courseName} 吗？`,
+        onOk: () => {
+          this.$message.success('删除成功');
+        }
+      });
+    }
+  }
+};
+</script>
+
+<style scoped>
+.course-library {
+  padding: 0;
+}
+
+.page-header {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.filter-form {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 4px;
+}
+</style>
