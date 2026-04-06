@@ -16,7 +16,7 @@
         <div class="logo">
           <user-outlined style="font-size: 48px; color: #1890ff;" />
         </div>
-        <h1>教务系统</h1>
+        <h1>教务后台管理系统</h1>
         <p>请登录以访问系统</p>
       </div>
       
@@ -75,7 +75,7 @@
         />
         
         <div class="login-footer">
-          <p>© 2026 教务系统</p>
+          <p>© 2026 教务后台管理系统</p>
         </div>
       </a-form>
     </div>
@@ -108,18 +108,28 @@ export default {
       this.error = '';
       
       try {
+        console.log('尝试登录...', this.form);
         const response = await authApi.login(this.form);
+        console.log('登录响应:', response.data);
+        
         if (response.data.success) {
-          // 登录成功，保存用户信息到本地存储
-          localStorage.setItem('user', JSON.stringify(response.data));
-          // 跳转到学生列表页面
+          // 登录成功，保存用户信息和 Token
+          const { token, user } = response.data;
+          console.log('Token:', token);
+          console.log('User:', user);
+          
+          localStorage.setItem('token', token);
+          localStorage.setItem('user', JSON.stringify(user));
+          
+          // 触发登录成功事件
           this.$emit('login-success');
         } else {
-          this.error = response.data.message;
+          this.error = response.data.message || '登录失败';
         }
       } catch (error) {
         console.error('登录失败:', error);
-        this.error = '登录失败，请稍后重试';
+        console.error('错误详情:', error.response?.data);
+        this.error = error.response?.data?.message || '登录失败，请检查网络连接或后端服务是否启动';
       } finally {
         this.loading = false;
       }
@@ -199,11 +209,23 @@ export default {
 .login-header {
   text-align: center;
   margin-bottom: 30px;
+  background: transparent !important;
 }
 
 .logo {
   margin-bottom: 20px;
   animation: pulse 2s ease-in-out infinite;
+  display: inline-block;
+  background: transparent !important;
+  padding: 0;
+}
+
+.logo .anticon {
+  display: block;
+  font-size: 48px;
+  color: #1890ff;
+  background: transparent !important;
+  border: none !important;
 }
 
 @keyframes pulse {
