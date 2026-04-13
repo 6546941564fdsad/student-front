@@ -237,6 +237,23 @@
                 </a-menu-item>
               </a-sub-menu>
               
+              <!-- 教学质量管理 -->
+              <a-sub-menu key="quality-group" v-if="checkPermission('teaching-evaluation') || checkPermission('academic-warning') || checkPermission('course-change')">
+                <template #icon><StarOutlined /></template>
+                <template #title>
+                  <span>教学质量管理</span>
+                </template>
+                <a-menu-item key="teaching-evaluation" v-if="checkPermission('teaching-evaluation')">
+                  <span>教学评教</span>
+                </a-menu-item>
+                <a-menu-item key="academic-warning" v-if="checkPermission('academic-warning')">
+                  <span>学业预警</span>
+                </a-menu-item>
+                <a-menu-item key="course-change" v-if="checkPermission('course-change')">
+                  <span>调课管理</span>
+                </a-menu-item>
+              </a-sub-menu>
+              
               <!-- 系统设置 -->
               <a-sub-menu key="system-group" v-if="checkPermission('user-management') || checkPermission('role-permission') || checkPermission('data-dictionary') || checkPermission('system-log')">
                 <template #icon><SettingOutlined /></template>
@@ -270,29 +287,34 @@
             </div>
             <div>
               <!-- 动态组件 - 每个组件独立渲染 -->
-              <DataStats v-show="currentComponent === 'DataStats'" :key="contentKey + '-data-stats'" :user="user" />
-              <TodoList v-show="currentComponent === 'TodoList'" :key="contentKey + '-todo-list'" :user="user" />
-              <SystemNotice v-show="currentComponent === 'SystemNotice'" :key="contentKey + '-system-notice'" :user="user" />
-              <StudentArchives v-show="currentComponent === 'StudentArchives'" :key="contentKey + '-student-archives'" :user="user" />
-              <StudentStatus v-show="currentComponent === 'StudentStatus'" :key="contentKey + '-student-status'" :user="user" />
-              <StudentPunishment v-show="currentComponent === 'StudentPunishment'" :key="contentKey + '-student-punishment'" :user="user" />
-              <GraduationAudit v-show="currentComponent === 'GraduationAudit'" :key="contentKey + '-graduation-audit'" :user="user" />
-              <CourseLibrary v-show="currentComponent === 'CourseLibrary'" :key="contentKey + '-course-library'" :user="user" />
-              <TrainingPlan v-show="currentComponent === 'TrainingPlan'" :key="contentKey + '-training-plan'" :user="user" />
-              <TeachingSchedule v-show="currentComponent === 'TeachingSchedule'" :key="contentKey + '-teaching-schedule'" :user="user" />
-              <CourseScheduling v-show="currentComponent === 'CourseScheduling'" :key="contentKey + '-course-scheduling'" :user="user" />
-              <TeacherManagement v-show="currentComponent === 'TeacherManagement'" :key="contentKey + '-teacher-management'" :user="user" />
-              <TeachingTask v-show="currentComponent === 'TeachingTask'" :key="contentKey + '-teaching-task'" :user="user" />
-              <GradeManagement v-show="currentComponent === 'GradeManagement'" :key="contentKey + '-grade-management'" :user="user" />
-              <CourseSelectionManagement v-show="currentComponent === 'CourseSelectionManagement'" :key="contentKey + '-course-selection'" :user="user" />
-              <AttendanceManagement v-show="currentComponent === 'AttendanceManagement'" :key="contentKey + '-attendance'" :user="user" />
-              <ExamArrangement v-show="currentComponent === 'ExamArrangement'" :key="contentKey + '-exam-arrangement'" :user="user" />
-              <InnovationManagement v-show="currentComponent === 'InnovationManagement'" :key="contentKey + '-innovation'" :user="user" />
-              <ThesisManagement v-show="currentComponent === 'ThesisManagement'" :key="contentKey + '-thesis'" :user="user" />
-              <UserManagement v-show="currentComponent === 'UserManagement'" :key="contentKey + '-user-management'" :user="user" />
-              <RoleManagement v-show="currentComponent === 'RoleManagement'" :key="contentKey + '-role-management'" :user="user" />
-              <DataDictionary v-show="currentComponent === 'DataDictionary'" :key="contentKey + '-data-dictionary'" :user="user" />
-              <SystemLog v-show="currentComponent === 'SystemLog'" :key="contentKey + '-system-log'" :user="user" />
+              <DataStats v-if="currentComponent === 'DataStats'" :key="contentKey + '-data-stats'" :user="user" />
+              <TodoList v-if="currentComponent === 'TodoList'" :key="contentKey + '-todo-list'" :user="user" />
+              <SystemNotice v-if="currentComponent === 'SystemNotice'" :key="contentKey + '-system-notice'" :user="user" />
+              <StudentArchives v-if="currentComponent === 'StudentArchives'" :key="contentKey + '-student-archives'" :user="user" />
+              <StudentStatus v-if="currentComponent === 'StudentStatus'" :key="contentKey + '-student-status'" :user="user" />
+              <StudentPunishment v-if="currentComponent === 'StudentPunishment'" :key="contentKey + '-student-punishment'" :user="user" />
+              <GraduationAudit v-if="currentComponent === 'GraduationAudit'" :key="contentKey + '-graduation-audit'" :user="user" />
+              <CourseLibrary v-if="currentComponent === 'CourseLibrary'" :key="contentKey + '-course-library'" :user="user" />
+              <TrainingPlan v-if="currentComponent === 'TrainingPlan'" :key="contentKey + '-training-plan'" :user="user" />
+              <TeachingSchedule v-if="currentComponent === 'TeachingSchedule'" :key="contentKey + '-teaching-schedule'" :user="user" />
+              <CourseScheduling v-if="currentComponent === 'CourseScheduling'" :key="contentKey + '-course-scheduling'" :user="user" />
+              <TeacherManagement v-if="currentComponent === 'TeacherManagement'" :key="contentKey + '-teacher-management'" :user="user" />
+              <TeachingTask v-if="currentComponent === 'TeachingTask'" :key="contentKey + '-teaching-task'" :user="user" />
+              <GradeManagement v-if="currentComponent === 'GradeManagement'" :key="contentKey + '-grade-management'" :user="user" />
+              <CourseSelectionManagement v-if="currentComponent === 'CourseSelectionManagement'" :key="contentKey + '-course-selection'" :user="user" />
+              <AttendanceManagement v-if="currentComponent === 'AttendanceManagement'" :key="contentKey + '-attendance'" :user="user" />
+              <ExamArrangement v-if="currentComponent === 'ExamArrangement'" :key="contentKey + '-exam-arrangement'" :user="user" />
+              <InnovationManagement v-if="currentComponent === 'InnovationManagement'" :key="contentKey + '-innovation'" :user="user" />
+              <ThesisManagement v-if="currentComponent === 'ThesisManagement'" :key="contentKey + '-thesis'" :user="user" />
+              <UserManagement v-if="currentComponent === 'UserManagement'" :key="contentKey + '-user-management'" :user="user" />
+              <RoleManagement v-if="currentComponent === 'RoleManagement'" :key="contentKey + '-role-management'" :user="user" />
+              <DataDictionary v-if="currentComponent === 'DataDictionary'" :key="contentKey + '-data-dictionary'" :user="user" />
+              <SystemLog v-if="currentComponent === 'SystemLog'" :key="contentKey + '-system-log'" :user="user" />
+              <TeachingEvaluation v-if="currentComponent === 'TeachingEvaluation'" :key="contentKey + '-teaching-evaluation'" :user="user" />
+              <AcademicWarning v-if="currentComponent === 'AcademicWarning'" :key="contentKey + '-academic-warning'" :user="user" />
+              <CourseChange v-if="currentComponent === 'CourseChange'" :key="contentKey + '-course-change'" :user="user" />
+              <TeacherEvaluation v-if="currentComponent === 'TeacherEvaluation'" :key="contentKey + '-teacher-evaluation'" :user="user" />
+              <InternshipManagement v-if="currentComponent === 'InternshipManagement'" :key="contentKey + '-internship-management'" :user="user" />
               <Dashboard v-show="currentComponent !== 'DataStats' && currentComponent !== 'TodoList' && currentComponent !== 'SystemNotice' && currentComponent !== 'StudentArchives' && currentComponent !== 'StudentStatus' && currentComponent !== 'StudentPunishment' && currentComponent !== 'GraduationAudit' && currentComponent !== 'CourseLibrary' && currentComponent !== 'TrainingPlan' && currentComponent !== 'TeachingSchedule' && currentComponent !== 'CourseScheduling' && currentComponent !== 'TeacherManagement' && currentComponent !== 'TeachingTask' && currentComponent !== 'GradeManagement' && currentComponent !== 'CourseSelectionManagement' && currentComponent !== 'AttendanceManagement' && currentComponent !== 'ExamArrangement' && currentComponent !== 'InnovationManagement' && currentComponent !== 'ThesisManagement' && currentComponent !== 'UserManagement' && currentComponent !== 'RoleManagement' && currentComponent !== 'DataDictionary' && currentComponent !== 'SystemLog'" :key="contentKey + '-dashboard'" :user="user" />
             </div>
           </a-layout-content>
@@ -337,6 +359,11 @@ import ThesisManagement from './components/ThesisManagement.vue';
 import RoleManagement from './components/RoleManagement.vue';
 import DataDictionary from './components/DataDictionary.vue';
 import SystemLog from './components/SystemLog.vue';
+import TeachingEvaluation from './components/TeachingEvaluation.vue';
+import AcademicWarning from './components/AcademicWarning.vue';
+import CourseChange from './components/CourseChange.vue';
+import TeacherEvaluation from './components/TeacherEvaluation.vue';
+import InternshipManagement from './components/InternshipManagement.vue';
 import { hasPermission } from './utils/permission';
 import { 
   DownOutlined, 
@@ -420,6 +447,11 @@ export default {
     RoleManagement,
     DataDictionary,
     SystemLog,
+    TeachingEvaluation,
+    AcademicWarning,
+    CourseChange,
+    TeacherEvaluation,
+    InternshipManagement,
     DownOutlined,
     LogoutOutlined,
     UserOutlined,
@@ -512,6 +544,9 @@ export default {
         'thesis-midterm': { parent: '毕业设计(论文)', child: '中期检查' },
         'defense-management': { parent: '毕业设计(论文)', child: '答辩管理' },
         'thesis-grade': { parent: '毕业设计(论文)', child: '成绩管理' },
+        'teaching-evaluation': { parent: '教学质量管理', child: '教学评教' },
+        'academic-warning': { parent: '教学质量管理', child: '学业预警' },
+        'course-change': { parent: '教学质量管理', child: '调课管理' },
         'user-management': { parent: '系统设置', child: '用户管理' },
         'role-permission': { parent: '系统设置', child: '角色权限' },
         'data-dictionary': { parent: '系统设置', child: '数据字典' },
@@ -636,7 +671,7 @@ export default {
             this.currentComponent = 'TeachingTask';
             break;
           case 'teacher-evaluation':
-            this.currentComponent = 'Dashboard'; // 临时使用仪表盘
+            this.currentComponent = 'TeacherEvaluation';
             break;
           
           // 成绩管理
@@ -658,7 +693,7 @@ export default {
             this.currentComponent = 'ExamArrangement';
             break;
           case 'internship-management':
-            this.currentComponent = 'Dashboard'; // 临时使用仪表盘
+            this.currentComponent = 'InternshipManagement';
             break;
           
           // 创新创业
@@ -674,6 +709,17 @@ export default {
           case 'defense-management':
           case 'thesis-grade':
             this.currentComponent = 'ThesisManagement';
+            break;
+          
+          // 教学质量管理
+          case 'teaching-evaluation':
+            this.currentComponent = 'TeachingEvaluation';
+            break;
+          case 'academic-warning':
+            this.currentComponent = 'AcademicWarning';
+            break;
+          case 'course-change':
+            this.currentComponent = 'CourseChange';
             break;
             
           // 系统设置
