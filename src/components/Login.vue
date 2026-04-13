@@ -27,7 +27,7 @@
           class="form-item"
         >
           <a-input 
-            v-model="form.username" 
+            v-model:value="form.username" 
             placeholder="用户名"
             size="large"
           >
@@ -43,7 +43,7 @@
           class="form-item"
         >
           <a-input-password 
-            v-model="form.password" 
+            v-model:value="form.password" 
             placeholder="密码"
             size="large"
           >
@@ -165,6 +165,7 @@ export default {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: 30% center;
 }
 
 .overlay {

@@ -15,7 +15,8 @@ export const ROLE_PERMISSIONS = {
     'course-selection', 'attendance-management', 'exam-arrangement', 'internship-management',
     'competition-management', 'project-management', 'credit-recognition',
     'thesis-proposal', 'thesis-midterm', 'defense-management', 'thesis-grade',
-    'user-management', 'role-permission', 'data-dictionary', 'system-log'
+    'user-management', 'role-permission', 'data-dictionary', 'system-log',
+    'teaching-evaluation', 'academic-warning', 'course-change'
   ],
   
   // 管理员 - 拥有所有权限（兼容 ADMIN 角色）
@@ -28,7 +29,8 @@ export const ROLE_PERMISSIONS = {
     'course-selection', 'attendance-management', 'exam-arrangement', 'internship-management',
     'competition-management', 'project-management', 'credit-recognition',
     'thesis-proposal', 'thesis-midterm', 'defense-management', 'thesis-grade',
-    'user-management', 'role-permission', 'data-dictionary', 'system-log'
+    'user-management', 'role-permission', 'data-dictionary', 'system-log',
+    'teaching-evaluation', 'academic-warning', 'course-change'
   ],
   
   // 教务管理员 - 教学管理相关权限
@@ -36,21 +38,23 @@ export const ROLE_PERMISSIONS = {
     'data-stats', 'todo-list', 'system-notice',
     'student-archives', 'student-status', 'student-punishment', 'graduation-audit',
     'course-library', 'training-plan', 'teaching-plan', 'course-scheduling',
-    'teacher-archives', 'teaching-task',
+    'teacher-archives', 'teaching-task', 'teaching-evaluation',
     'grade-entry', 'grade-audit', 'grade-analysis', 'grade-export',
     'course-selection', 'attendance-management', 'exam-arrangement',
     'competition-management', 'project-management', 'credit-recognition',
-    'thesis-proposal', 'thesis-midterm', 'defense-management', 'thesis-grade'
+    'thesis-proposal', 'thesis-midterm', 'defense-management', 'thesis-grade',
+    'academic-warning', 'course-change'
   ],
   
   // 教师 - 只能查看和录入成绩
   TEACHER: [
     'data-stats',
     'student-archives',
-    'teaching-task',
+    'teaching-task', 'teaching-evaluation',
     'grade-entry', 'grade-analysis',
     'attendance-management',
-    'thesis-proposal', 'thesis-midterm', 'thesis-grade'
+    'thesis-proposal', 'thesis-midterm', 'thesis-grade',
+    'course-change'
   ],
   
   // 辅导员 - 学生管理相关
