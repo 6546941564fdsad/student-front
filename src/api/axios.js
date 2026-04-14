@@ -28,10 +28,11 @@ api.interceptors.response.use(
   response => response,
   error => {
     if (error.response && error.response.status === 401) {
-      // Token 过期或无效，清除本地存储并跳转到登录页
+      // Token 过期或无效，清除本地存储
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.reload();
+      // 派发登出事件，通知 App.vue 更新状态（不刷新页面）
+      window.dispatchEvent(new CustomEvent('token-expired'));
     }
     return Promise.reject(error);
   }

@@ -301,11 +301,22 @@
               <TeacherManagement v-if="currentComponent === 'TeacherManagement'" :key="contentKey + '-teacher-management'" :user="user" />
               <TeachingTask v-if="currentComponent === 'TeachingTask'" :key="contentKey + '-teaching-task'" :user="user" />
               <GradeManagement v-if="currentComponent === 'GradeManagement'" :key="contentKey + '-grade-management'" :user="user" />
+              <GradeEntry v-if="currentComponent === 'GradeEntry'" :key="contentKey + '-grade-entry'" :user="user" />
+              <GradeAudit v-if="currentComponent === 'GradeAudit'" :key="contentKey + '-grade-audit'" :user="user" />
+              <GradeAnalysis v-if="currentComponent === 'GradeAnalysis'" :key="contentKey + '-grade-analysis'" :user="user" />
+              <GradeExport v-if="currentComponent === 'GradeExport'" :key="contentKey + '-grade-export'" :user="user" />
               <CourseSelectionManagement v-if="currentComponent === 'CourseSelectionManagement'" :key="contentKey + '-course-selection'" :user="user" />
               <AttendanceManagement v-if="currentComponent === 'AttendanceManagement'" :key="contentKey + '-attendance'" :user="user" />
               <ExamArrangement v-if="currentComponent === 'ExamArrangement'" :key="contentKey + '-exam-arrangement'" :user="user" />
               <InnovationManagement v-if="currentComponent === 'InnovationManagement'" :key="contentKey + '-innovation'" :user="user" />
+              <CompetitionManagement v-if="currentComponent === 'CompetitionManagement'" :key="contentKey + '-competition-management'" :user="user" />
+              <ProjectManagement v-if="currentComponent === 'ProjectManagement'" :key="contentKey + '-project-management'" :user="user" />
+              <CreditRecognition v-if="currentComponent === 'CreditRecognition'" :key="contentKey + '-credit-recognition'" :user="user" />
               <ThesisManagement v-if="currentComponent === 'ThesisManagement'" :key="contentKey + '-thesis'" :user="user" />
+              <ThesisProposal v-if="currentComponent === 'ThesisProposal'" :key="contentKey + '-thesis-proposal'" :user="user" />
+              <ThesisMidterm v-if="currentComponent === 'ThesisMidterm'" :key="contentKey + '-thesis-midterm'" :user="user" />
+              <DefenseManagement v-if="currentComponent === 'DefenseManagement'" :key="contentKey + '-defense-management'" :user="user" />
+              <ThesisGrade v-if="currentComponent === 'ThesisGrade'" :key="contentKey + '-thesis-grade'" :user="user" />
               <UserManagement v-if="currentComponent === 'UserManagement'" :key="contentKey + '-user-management'" :user="user" />
               <RoleManagement v-if="currentComponent === 'RoleManagement'" :key="contentKey + '-role-management'" :user="user" />
               <DataDictionary v-if="currentComponent === 'DataDictionary'" :key="contentKey + '-data-dictionary'" :user="user" />
@@ -351,11 +362,22 @@ import UserManagement from './components/UserManagement.vue';
 import TeacherManagement from './components/TeacherManagement.vue';
 import TeachingTask from './components/TeachingTask.vue';
 import GradeManagement from './components/GradeManagement.vue';
+import GradeEntry from './components/GradeEntry.vue';
+import GradeAudit from './components/GradeAudit.vue';
+import GradeAnalysis from './components/GradeAnalysis.vue';
+import GradeExport from './components/GradeExport.vue';
 import CourseSelectionManagement from './components/CourseSelectionManagement.vue';
 import AttendanceManagement from './components/AttendanceManagement.vue';
 import ExamArrangement from './components/ExamArrangement.vue';
 import InnovationManagement from './components/InnovationManagement.vue';
+import CompetitionManagement from './components/CompetitionManagement.vue';
+import ProjectManagement from './components/ProjectManagement.vue';
+import CreditRecognition from './components/CreditRecognition.vue';
 import ThesisManagement from './components/ThesisManagement.vue';
+import ThesisProposal from './components/ThesisProposal.vue';
+import ThesisMidterm from './components/ThesisMidterm.vue';
+import DefenseManagement from './components/DefenseManagement.vue';
+import ThesisGrade from './components/ThesisGrade.vue';
 import RoleManagement from './components/RoleManagement.vue';
 import DataDictionary from './components/DataDictionary.vue';
 import SystemLog from './components/SystemLog.vue';
@@ -439,11 +461,22 @@ export default {
     TeacherManagement,
     TeachingTask,
     GradeManagement,
+    GradeEntry,
+    GradeAudit,
+    GradeAnalysis,
+    GradeExport,
     CourseSelectionManagement,
     AttendanceManagement,
     ExamArrangement,
     InnovationManagement,
+    CompetitionManagement,
+    ProjectManagement,
+    CreditRecognition,
     ThesisManagement,
+    ThesisProposal,
+    ThesisMidterm,
+    DefenseManagement,
+    ThesisGrade,
     RoleManagement,
     DataDictionary,
     SystemLog,
@@ -569,6 +602,12 @@ export default {
   mounted() {
     // 检查登录状态，如果已登录则恢复状态
     this.checkLoginStatus();
+    
+    // 监听 Token 过期事件，自动退出登录（不刷新页面）
+    window.addEventListener('token-expired', () => {
+      console.log('Token expired, logging out...');
+      this.logout();
+    });
   },
   methods: {
     checkLoginStatus() {
@@ -676,10 +715,16 @@ export default {
           
           // 成绩管理
           case 'grade-entry':
+            this.currentComponent = 'GradeEntry';
+            break;
           case 'grade-audit':
+            this.currentComponent = 'GradeAudit';
+            break;
           case 'grade-analysis':
+            this.currentComponent = 'GradeAnalysis';
+            break;
           case 'grade-export':
-            this.currentComponent = 'GradeManagement';
+            this.currentComponent = 'GradeExport';
             break;
           
           // 教学运行
@@ -698,17 +743,27 @@ export default {
           
           // 创新创业
           case 'competition-management':
+            this.currentComponent = 'CompetitionManagement';
+            break;
           case 'project-management':
+            this.currentComponent = 'ProjectManagement';
+            break;
           case 'credit-recognition':
-            this.currentComponent = 'InnovationManagement';
+            this.currentComponent = 'CreditRecognition';
             break;
           
           // 毕业设计(论文)
           case 'thesis-proposal':
+            this.currentComponent = 'ThesisProposal';
+            break;
           case 'thesis-midterm':
+            this.currentComponent = 'ThesisMidterm';
+            break;
           case 'defense-management':
+            this.currentComponent = 'DefenseManagement';
+            break;
           case 'thesis-grade':
-            this.currentComponent = 'ThesisManagement';
+            this.currentComponent = 'ThesisGrade';
             break;
           
           // 教学质量管理
