@@ -63,6 +63,19 @@ export const ROLE_PERMISSIONS = {
     'student-archives', 'student-status', 'student-punishment',
     'attendance-management',
     'competition-management', 'credit-recognition'
+  ],
+  
+  // 学生 - 只能查看个人信息、选课、成绩查询等
+  STUDENT: [
+    'data-stats',
+    'student-archives',  // 查看个人档案
+    'course-selection',  // 选课
+    'grade-analysis',    // 查看成绩
+    'attendance-management',  // 查看考勤
+    'exam-arrangement',  // 查看考试安排
+    'internship-management',  // 实习申请
+    'thesis-proposal',   // 毕业设计开题
+    'teaching-evaluation'  // 教学评教
   ]
 };
 
