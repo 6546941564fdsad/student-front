@@ -97,6 +97,7 @@
 
 <script>
 import { PlusOutlined, DownloadOutlined, SafetyCertificateOutlined, BarChartOutlined } from '@ant-design/icons-vue';
+import { gradeApi } from '@/api/grade';
 
 export default {
   name: 'GradeManagement',
@@ -203,41 +204,22 @@ export default {
     this.loadGrades();
   },
   methods: {
-    loadGrades() {
-      this.loading = true;
-      // 模拟数据
-      setTimeout(() => {
-        this.grades = [
-          {
-            id: 1,
-            index: 1,
-            semester: '2024-2025学年第一学期',
-            studentId: '2021001',
-            studentName: '张三',
-            courseName: 'Java程序设计',
-            score: 92,
-            grade: '优秀',
-            credits: 4.0,
-            status: '已审核',
-            entryTime: '2025-01-15 10:30:00'
-          },
-          {
-            id: 2,
-            index: 2,
-            semester: '2024-2025学年第一学期',
-            studentId: '2021002',
-            studentName: '李四',
-            courseName: '数据结构',
-            score: 85,
-            grade: '良好',
-            credits: 3.0,
-            status: '待审核',
-            entryTime: '2025-01-15 11:20:00'
-          }
-        ];
-        this.pagination.total = this.grades.length;
+    async loadGrades() {
+      try {
+        this.loading = true;
+        const page = this.pagination.current - 1;
+        const size = this.pagination.pageSize;
+        const response = await gradeApi.getAll(page, size);
+        const data = response.data.data;
+        this.grades = data.content || [];
+        this.pagination.total = data.totalElements || this.grades.length;
+      } catch (error) {
+        this.$message.error('加载成绩数据失败：' + (error.response?.data?.message || error.message));
+        this.grades = [];
+        this.pagination.total = 0;
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     getScoreColor(score) {
       if (score >= 90) return '#52c41a';
@@ -256,9 +238,28 @@ export default {
       };
       return colorMap[grade] || 'default';
     },
-    handleSearch() {
-      this.pagination.current = 1;
-      this.loadGrades();
+    async handleSearch() {
+      try {
+        this.loading = true;
+        const response = await gradeApi.getAll();
+        let filtered = response.data.data.content || [];
+        if (this.filters.studentId) {
+          filtered = filtered.filter(g => g.studentId && g.studentId.includes(this.filters.studentId));
+        }
+        if (this.filters.studentName) {
+          filtered = filtered.filter(g => g.studentName && g.studentName.includes(this.filters.studentName));
+        }
+        if (this.filters.courseName) {
+          filtered = filtered.filter(g => g.courseName && g.courseName.includes(this.filters.courseName));
+        }
+        this.grades = filtered;
+        this.pagination.total = filtered.length;
+        this.pagination.current = 1;
+      } catch (error) {
+        this.$message.error('查询失败：' + (error.response?.data?.message || error.message));
+      } finally {
+        this.loading = false;
+      }
     },
     handleReset() {
       this.filters = {
@@ -287,9 +288,20 @@ export default {
     handleEdit(record) {
       this.$message.info(`编辑成绩：${record.studentName} - ${record.courseName}`);
     },
-    handleDelete(record) {
-      this.$message.success(`已删除成绩记录`);
-      this.loadGrades();
+    async handleDelete(record) {
+      this.$confirm({
+        title: '确认删除',
+        content: `确定要删除 ${record.studentName} 的 ${record.courseName} 成绩记录吗？`,
+        onOk: async () => {
+          try {
+            await gradeApi.delete(record.id);
+            this.$message.success('删除成功');
+            this.loadGrades();
+          } catch (error) {
+            this.$message.error('删除失败：' + (error.response?.data?.message || error.message));
+          }
+        }
+      });
     },
     handleTableChange(pagination) {
       this.pagination.current = pagination.current;

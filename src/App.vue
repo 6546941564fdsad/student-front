@@ -161,11 +161,14 @@
               </a-sub-menu>
               
               <!-- 成绩管理 -->
-              <a-sub-menu key="grade-group" v-if="checkPermission('grade-entry') || checkPermission('grade-audit') || checkPermission('grade-analysis') || checkPermission('grade-export')">
+              <a-sub-menu key="grade-group" v-if="checkPermission('grade-management') || checkPermission('grade-entry') || checkPermission('grade-audit') || checkPermission('grade-analysis') || checkPermission('grade-export')">
                 <template #icon><BarChartOutlined /></template>
                 <template #title>
                   <span>成绩管理</span>
                 </template>
+                <a-menu-item key="grade-management" v-if="checkPermission('grade-management')">
+                  <span>成绩管理</span>
+                </a-menu-item>
                 <a-menu-item key="grade-entry" v-if="checkPermission('grade-entry')">
                   <span>成绩录入</span>
                 </a-menu-item>
@@ -562,6 +565,7 @@ export default {
         'teacher-archives': { parent: '教师管理', child: '教师档案' },
         'teaching-task': { parent: '教师管理', child: '教学任务' },
         'teacher-evaluation': { parent: '教师管理', child: '教师评价' },
+        'grade-management': { parent: '成绩管理', child: '成绩管理' },
         'grade-entry': { parent: '成绩管理', child: '成绩录入' },
         'grade-audit': { parent: '成绩管理', child: '成绩审核' },
         'grade-analysis': { parent: '成绩管理', child: '成绩分析' },
@@ -714,6 +718,9 @@ export default {
             break;
           
           // 成绩管理
+          case 'grade-management':
+            this.currentComponent = 'GradeManagement';
+            break;
           case 'grade-entry':
             this.currentComponent = 'GradeEntry';
             break;
