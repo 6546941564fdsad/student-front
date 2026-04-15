@@ -75,6 +75,8 @@
 </template>
 
 <script>
+import { studentApi } from '@/api/student';
+
 export default {
   name: 'StudentArchives',
   data() {
@@ -113,47 +115,44 @@ export default {
     this.loadStudents();
   },
   methods: {
-    loadStudents() {
-      this.loading = true;
-      // 模拟数据
-      setTimeout(() => {
-        this.students = [
-          {
-            id: 1,
-            studentNo: '2024001001',
-            name: '张三',
-            gender: '男',
-            college: '大数据与计算机学院',
-            major: '计算机科学与技术',
-            className: '计科2401班',
-            enrollYear: '2024',
-            status: '在读',
-            birthDate: '2005-03-15',
-            phone: '13800138000',
-            email: 'zhangsan@example.com'
-          },
-          {
-            id: 2,
-            studentNo: '2024001002',
-            name: '李四',
-            gender: '女',
-            college: '大数据与计算机学院',
-            major: '软件工程',
-            className: '软工2401班',
-            enrollYear: '2024',
-            status: '在读',
-            birthDate: '2005-07-22',
-            phone: '13900139000',
-            email: 'lisi@example.com'
-          }
-        ];
+    async loadStudents() {
+      try {
+        this.loading = true;
+        const response = await studentApi.getStudents();
+        this.students = response.data;
         this.pagination.total = this.students.length;
+      } catch (error) {
+        this.$message.error('加载学生数据失败：' + (error.response?.data?.message || error.message));
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
-    handleSearch() {
-      this.pagination.current = 1;
-      this.loadStudents();
+    async handleSearch() {
+      try {
+        this.loading = true;
+        const response = await studentApi.getStudents();
+        // Filter data on frontend since API doesn't support filtering yet
+        let filtered = response.data;
+        if (this.filters.studentNo) {
+          filtered = filtered.filter(s => s.studentNo.includes(this.filters.studentNo));
+        }
+        if (this.filters.name) {
+          filtered = filtered.filter(s => s.name.includes(this.filters.name));
+        }
+        if (this.filters.college) {
+          filtered = filtered.filter(s => s.college === this.filters.college);
+        }
+        if (this.filters.major) {
+          filtered = filtered.filter(s => s.major === this.filters.major);
+        }
+        this.students = filtered;
+        this.pagination.total = this.students.length;
+        this.pagination.current = 1;
+      } catch (error) {
+        this.$message.error('查询失败：' + (error.response?.data?.message || error.message));
+      } finally {
+        this.loading = false;
+      }
     },
     handleReset() {
       this.filters = {
@@ -162,11 +161,10 @@ export default {
         college: '',
         major: ''
       };
-      this.handleSearch();
+      this.loadStudents();
     },
     handleTableChange(pagination) {
       this.pagination = pagination;
-      this.loadStudents();
     },
     viewStudent(student) {
       this.currentStudent = student;
@@ -175,12 +173,18 @@ export default {
     editStudent(student) {
       this.$message.info(`编辑学生：${student.name}`);
     },
-    deleteStudent(student) {
+    async deleteStudent(student) {
       this.$confirm({
         title: '确认删除',
         content: `确定要删除学生 ${student.name} 吗？`,
-        onOk: () => {
-          this.$message.success('删除成功');
+        onOk: async () => {
+          try {
+            await studentApi.deleteStudent(student.id);
+            this.$message.success('删除成功');
+            this.loadStudents();
+          } catch (error) {
+            this.$message.error('删除失败：' + (error.response?.data?.message || error.message));
+          }
         }
       });
     }

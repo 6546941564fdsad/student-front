@@ -208,6 +208,7 @@
 <script>
 import { TrophyOutlined, StarOutlined, CheckCircleOutlined, TeamOutlined, PlusOutlined, DownloadOutlined } from '@ant-design/icons-vue';
 import dayjs from 'dayjs';
+import { competitionApi } from '@/api/competition';
 
 export default {
   name: 'CompetitionManagement',
@@ -269,11 +270,7 @@ export default {
         awardLevel: [{ required: true, message: '请选择获奖等级', trigger: 'change' }],
         studentIds: [{ required: true, message: '请选择参赛学生', trigger: 'change', type: 'array' }]
       },
-      studentOptions: [
-        { id: 1, name: '张三', studentNo: '2024001' },
-        { id: 2, name: '李四', studentNo: '2024002' },
-        { id: 3, name: '王五', studentNo: '2024003' }
-      ],
+      studentOptions: [],
       detailVisible: false,
       currentRecord: null
     };
@@ -284,52 +281,32 @@ export default {
   },
   methods: {
     async loadData() {
-      this.loading = true;
-      // TODO: 调用后端 API
-      setTimeout(() => {
-        this.competitionList = [
-          {
-            id: 1,
-            index: 1,
-            competitionName: '全国大学生程序设计竞赛',
-            level: '国家级',
-            awardLevel: '一等奖',
-            teacher: '张老师',
-            awardDate: '2024-11-15',
-            participantCount: 3,
-            students: [
-              { id: 1, name: '张三', studentNo: '2024001' },
-              { id: 2, name: '李四', studentNo: '2024002' },
-              { id: 3, name: '王五', studentNo: '2024003' }
-            ]
-          },
-          {
-            id: 2,
-            index: 2,
-            competitionName: '省大学生数学建模竞赛',
-            level: '省级',
-            awardLevel: '二等奖',
-            teacher: '李老师',
-            awardDate: '2024-10-20',
-            participantCount: 2,
-            students: [
-              { id: 4, name: '赵六', studentNo: '2024004' },
-              { id: 5, name: '孙七', studentNo: '2024005' }
-            ]
-          }
-        ];
-        this.pagination.total = this.competitionList.length;
+      try {
+        this.loading = true;
+        const page = this.pagination.current - 1;
+        const size = this.pagination.pageSize;
+        const response = await competitionApi.getAll(page, size);
+        const data = response.data.data;
+        this.competitionList = (data.content || []).map((item, idx) => ({
+          ...item,
+          index: (page * size) + idx + 1
+        }));
+        this.pagination.total = data.totalElements || this.competitionList.length;
+      } catch (error) {
+        this.$message.error('加载竞赛数据失败：' + (error.response?.data?.message || error.message));
+        this.competitionList = [];
+        this.pagination.total = 0;
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     async loadStatistics() {
-      // TODO: 调用后端 API
-      this.statistics = {
-        totalCount: 25,
-        nationalCount: 8,
-        provincialCount: 12,
-        participantCount: 68
-      };
+      try {
+        const response = await competitionApi.getStatistics();
+        this.statistics = response.data.data || this.statistics;
+      } catch (error) {
+        console.error('加载统计数据失败:', error);
+      }
     },
     handleSearch() {
       this.pagination.current = 1;
@@ -387,15 +364,26 @@ export default {
       }
       
       this.submitLoading = true;
-      // TODO: 调用后端 API
-      setTimeout(() => {
-        const msg = this.isEdit ? '编辑成功' : '添加成功';
-        this.$message.success(msg);
+      try {
+        const formData = {
+          ...this.form,
+          awardDate: this.form.awardDate ? dayjs(this.form.awardDate).format('YYYY-MM-DD') : null
+        };
+        if (this.isEdit) {
+          await competitionApi.update(this.currentRecord.id, formData);
+          this.$message.success('编辑成功');
+        } else {
+          await competitionApi.add(formData);
+          this.$message.success('添加成功');
+        }
         this.modalVisible = false;
-        this.submitLoading = false;
         this.loadData();
         this.loadStatistics();
-      }, 1000);
+      } catch (error) {
+        this.$message.error((this.isEdit ? '编辑' : '添加') + '失败：' + (error.response?.data?.message || error.message));
+      } finally {
+        this.submitLoading = false;
+      }
     },
     handleCancel() {
       this.modalVisible = false;
@@ -406,10 +394,20 @@ export default {
       this.detailVisible = true;
     },
     async handleDelete(id) {
-      // TODO: 调用后端 API
-      this.$message.success('删除成功');
-      this.loadData();
-      this.loadStatistics();
+      this.$confirm({
+        title: '确认删除',
+        content: '确定要删除该竞赛获奖记录吗？',
+        onOk: async () => {
+          try {
+            await competitionApi.delete(id);
+            this.$message.success('删除成功');
+            this.loadData();
+            this.loadStatistics();
+          } catch (error) {
+            this.$message.error('删除失败：' + (error.response?.data?.message || error.message));
+          }
+        }
+      });
     },
     handleExport() {
       this.$message.info('导出功能开发中...');

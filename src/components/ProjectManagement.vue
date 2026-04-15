@@ -78,6 +78,7 @@
 <script>
 import { FolderOutlined, CheckCircleOutlined, ClockCircleOutlined, TrophyOutlined, PlusOutlined, DownloadOutlined } from '@ant-design/icons-vue';
 import dayjs from 'dayjs';
+import { projectApi } from '@/api/project';
 
 export default {
   name: 'ProjectManagement',
@@ -108,7 +109,7 @@ export default {
         level: [{ required: true, message: '请选择项目级别', trigger: 'change' }],
         leaderId: [{ required: true, message: '请选择项目负责人', trigger: 'change' }]
       },
-      studentOptions: [{ id: 1, name: '张三', studentNo: '2024001' }, { id: 2, name: '李四', studentNo: '2024002' }],
+      studentOptions: [],
       detailVisible: false,
       currentRecord: null
     };
@@ -116,27 +117,88 @@ export default {
   mounted() { this.loadData(); this.loadStatistics(); },
   methods: {
     async loadData() {
-      this.loading = true;
-      setTimeout(() => {
-        this.projectList = [
-          { id: 1, index: 1, projectName: '基于AI的智能教学系统', level: '国家级', leaderName: '张三', teacher: '张老师', startDate: '2024-09-01', status: '进行中', budget: 10000, description: '开发一个智能教学辅助系统' },
-          { id: 2, index: 2, projectName: '校园二手交易平台', level: '省级', leaderName: '李四', teacher: '李老师', startDate: '2024-10-15', status: '申报中', budget: 5000, description: '搭建校园二手物品交易平台' }
-        ];
-        this.pagination.total = this.projectList.length;
+      try {
+        this.loading = true;
+        const page = this.pagination.current - 1;
+        const size = this.pagination.pageSize;
+        const response = await projectApi.getAll(page, size);
+        const data = response.data.data;
+        this.projectList = (data.content || []).map((item, idx) => ({
+          ...item,
+          index: (page * size) + idx + 1
+        }));
+        this.pagination.total = data.totalElements || this.projectList.length;
+      } catch (error) {
+        this.$message.error('加载项目数据失败：' + (error.response?.data?.message || error.message));
+        this.projectList = [];
+        this.pagination.total = 0;
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
-    async loadStatistics() { this.statistics = { totalCount: 18, nationalCount: 5, inProgressCount: 12, completedCount: 6 }; },
+    async loadStatistics() {
+      try {
+        const response = await projectApi.getStatistics();
+        this.statistics = response.data.data || this.statistics;
+      } catch (error) {
+        console.error('加载统计数据失败:', error);
+      }
+    },
     handleSearch() { this.pagination.current = 1; this.loadData(); },
     handleReset() { this.filters = { projectName: '', level: '', status: '' }; this.pagination.current = 1; this.loadData(); },
     handleTableChange(pagination) { this.pagination.current = pagination.current; this.pagination.pageSize = pagination.pageSize; this.loadData(); },
     showAddModal() { this.isEdit = false; this.resetForm(); this.modalVisible = true; },
     showEditModal(record) { this.isEdit = true; this.currentRecord = record; this.form = { ...record, leaderId: 1, startDate: dayjs(record.startDate), endDate: record.endDate ? dayjs(record.endDate) : null }; this.modalVisible = true; },
     resetForm() { this.form = { projectName: '', level: undefined, leaderId: undefined, teacher: '', startDate: null, endDate: null, budget: 0, description: '' }; if (this.$refs.formRef) this.$refs.formRef.clearValidate(); },
-    async handleSubmit() { try { await this.$refs.formRef.validate(); } catch (error) { this.$message.warning('请检查表单'); return; } this.submitLoading = true; setTimeout(() => { this.$message.success(this.isEdit ? '编辑成功' : '添加成功'); this.modalVisible = false; this.submitLoading = false; this.loadData(); this.loadStatistics(); }, 1000); },
+    async handleSubmit() {
+      try {
+        await this.$refs.formRef.validate();
+      } catch (error) {
+        this.$message.warning('请检查表单填写是否正确');
+        return;
+      }
+      
+      this.submitLoading = true;
+      try {
+        const formData = {
+          ...this.form,
+          startDate: this.form.startDate ? dayjs(this.form.startDate).format('YYYY-MM-DD') : null,
+          endDate: this.form.endDate ? dayjs(this.form.endDate).format('YYYY-MM-DD') : null
+        };
+        if (this.isEdit) {
+          await projectApi.update(this.currentRecord.id, formData);
+          this.$message.success('编辑成功');
+        } else {
+          await projectApi.add(formData);
+          this.$message.success('添加成功');
+        }
+        this.modalVisible = false;
+        this.loadData();
+        this.loadStatistics();
+      } catch (error) {
+        this.$message.error((this.isEdit ? '编辑' : '添加') + '失败：' + (error.response?.data?.message || error.message));
+      } finally {
+        this.submitLoading = false;
+      }
+    },
     handleCancel() { this.modalVisible = false; this.resetForm(); },
     showDetail(record) { this.currentRecord = record; this.detailVisible = true; },
-    async handleDelete(id) { this.$message.success('删除成功'); this.loadData(); this.loadStatistics(); },
+    async handleDelete(id) {
+      this.$confirm({
+        title: '确认删除',
+        content: '确定要删除该项目吗？',
+        onOk: async () => {
+          try {
+            await projectApi.delete(id);
+            this.$message.success('删除成功');
+            this.loadData();
+            this.loadStatistics();
+          } catch (error) {
+            this.$message.error('删除失败：' + (error.response?.data?.message || error.message));
+          }
+        }
+      });
+    },
     handleExport() { this.$message.info('导出功能开发中...'); },
     getLevelColor(level) { const map = { '国家级': 'red', '省级': 'blue', '校级': 'green' }; return map[level] || 'default'; },
     getStatusColor(status) { const map = { '申报中': 'orange', '进行中': 'blue', '已结题': 'green' }; return map[status] || 'default'; },

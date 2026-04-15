@@ -25,7 +25,7 @@ export const ROLE_PERMISSIONS = {
     'student-archives', 'student-status', 'student-punishment', 'graduation-audit',
     'course-library', 'training-plan', 'teaching-plan', 'course-scheduling',
     'teacher-archives', 'teaching-task', 'teacher-evaluation',
-    'grade-entry', 'grade-audit', 'grade-analysis', 'grade-export',
+    'grade-management', 'grade-entry', 'grade-audit', 'grade-analysis', 'grade-export',
     'course-selection', 'attendance-management', 'exam-arrangement', 'internship-management',
     'competition-management', 'project-management', 'credit-recognition',
     'thesis-proposal', 'thesis-midterm', 'defense-management', 'thesis-grade',
