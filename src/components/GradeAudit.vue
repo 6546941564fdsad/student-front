@@ -157,6 +157,8 @@
 <script>
 import { CheckCircleOutlined, CloseCircleOutlined, DownloadOutlined } from '@ant-design/icons-vue';
 import dayjs from 'dayjs';
+import gradeApi from '../api/grade';
+import eventBus from '../utils/eventBus';
 
 export default {
   name: 'GradeAudit',
@@ -217,43 +219,32 @@ export default {
   methods: {
     async loadData() {
       this.loading = true;
-      // TODO: 调用后端 API
-      setTimeout(() => {
-        this.auditList = [
-          {
-            id: 1,
-            index: 1,
-            courseName: 'Java程序设计',
-            teacherName: '张老师',
-            semester: '2024-2025学年第一学期',
-            className: '计科2401班',
-            studentCount: 45,
-            avgGrade: 82.5,
-            maxGrade: 95,
-            minGrade: 60,
-            submitTime: '2025-01-15 10:30:00',
-            status: 'pending',
-            auditOpinion: ''
-          },
-          {
-            id: 2,
-            index: 2,
-            courseName: '数据结构',
-            teacherName: '李老师',
-            semester: '2024-2025学年第一学期',
-            className: '计科2402班',
-            studentCount: 42,
-            avgGrade: 78.3,
-            maxGrade: 92,
-            minGrade: 55,
-            submitTime: '2025-01-14 16:20:00',
-            status: 'approved',
-            auditOpinion: '成绩分布合理，予以通过'
-          }
-        ];
-        this.pagination.total = this.auditList.length;
+      try {
+        const params = {
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize,
+          semester: this.filters.semester || undefined,
+          status: this.filters.status || 'pending'
+        };
+        const res = await gradeApi.getAll(params.page, params.size);
+        if (res.data.success) {
+          // Spring Data Page 对象结构: { content: [...], totalElements: 100, ... }
+          const pageData = res.data.data;
+          const content = Array.isArray(pageData) ? pageData : (pageData.content || []);
+          const total = pageData.totalElements || 0;
+          
+          this.auditList = content.map((item, index) => ({
+            ...item,
+            index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
+          }));
+          this.pagination.total = total;
+        }
+      } catch (error) {
+        console.error('加载审核数据失败:', error);
+        this.$message.error('加载审核数据失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     handleSearch() {
       this.pagination.current = 1;
@@ -294,14 +285,27 @@ export default {
         return;
       }
       this.submitLoading = true;
-      // TODO: 调用后端 API 提交审核
-      setTimeout(() => {
-        const resultText = this.approveResult === 'approved' ? '通过' : '驳回';
-        this.$message.success(`审核${resultText}成功！`);
-        this.approveVisible = false;
+      try {
+        const auditData = {
+          auditorId: 1,
+          auditOpinion: this.approveOpinion,
+          approved: this.approveResult === 'approved'
+        };
+        const res = await gradeApi.audit(this.currentRecord.id, auditData);
+        if (res.data.success) {
+          const resultText = this.approveResult === 'approved' ? '通过' : '驳回';
+          this.$message.success(res.data.message || `审核${resultText}成功！`);
+          this.approveVisible = false;
+          this.loadData();
+        } else {
+          this.$message.error(res.data.message || '审核失败');
+        }
+      } catch (error) {
+        console.error('审核失败:', error);
+        this.$message.error('审核失败');
+      } finally {
         this.submitLoading = false;
-        this.loadData();
-      }, 1000);
+      }
     },
     handleCancel() {
       this.approveVisible = false;
@@ -311,20 +315,50 @@ export default {
         this.$message.warning('请选择要审核的记录');
         return;
       }
-      // TODO: 调用后端 API 批量通过
-      this.$message.success(`批量通过 ${this.selectedRowKeys.length} 条记录`);
-      this.selectedRowKeys = [];
-      this.loadData();
+      try {
+        const auditData = {
+          ids: this.selectedRowKeys,
+          auditorId: 1,
+          auditOpinion: '批量通过',
+          approved: true
+        };
+        const res = await gradeApi.batchAudit(auditData);
+        if (res.data.success) {
+          this.$message.success(res.data.message || `批量通过 ${this.selectedRowKeys.length} 条记录`);
+          this.selectedRowKeys = [];
+          this.loadData();
+        } else {
+          this.$message.error(res.data.message || '批量审核失败');
+        }
+      } catch (error) {
+        console.error('批量审核失败:', error);
+        this.$message.error('批量审核失败');
+      }
     },
     async handleBatchReject() {
       if (this.selectedRowKeys.length === 0) {
         this.$message.warning('请选择要驳回的记录');
         return;
       }
-      // TODO: 调用后端 API 批量驳回
-      this.$message.success(`批量驳回 ${this.selectedRowKeys.length} 条记录`);
-      this.selectedRowKeys = [];
-      this.loadData();
+      try {
+        const auditData = {
+          ids: this.selectedRowKeys,
+          auditorId: 1,
+          auditOpinion: '批量驳回',
+          approved: false
+        };
+        const res = await gradeApi.batchAudit(auditData);
+        if (res.data.success) {
+          this.$message.success(res.data.message || `批量驳回 ${this.selectedRowKeys.length} 条记录`);
+          this.selectedRowKeys = [];
+          this.loadData();
+        } else {
+          this.$message.error(res.data.message || '批量驳回失败');
+        }
+      } catch (error) {
+        console.error('批量驳回失败:', error);
+        this.$message.error('批量驳回失败');
+      }
     },
     handleExport() {
       this.$message.info('导出功能开发中...');

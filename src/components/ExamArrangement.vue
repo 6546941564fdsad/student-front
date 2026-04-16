@@ -90,6 +90,7 @@
 
 <script>
 import { PlusOutlined, DownloadOutlined, ThunderboltOutlined } from '@ant-design/icons-vue';
+import { examArrangementApi } from '@/api/examArrangement';
 
 export default {
   name: 'ExamArrangement',
@@ -187,39 +188,30 @@ export default {
     this.loadExams();
   },
   methods: {
-    loadExams() {
+    async loadExams() {
       this.loading = true;
-      // 模拟数据
-      setTimeout(() => {
-        this.exams = [
-          {
-            id: 1,
-            index: 1,
-            semester: '2024-2025学年第一学期',
-            courseName: 'Java程序设计',
-            examType: '期末考试',
-            examTime: '2025-01-15 09:00',
-            examLocation: '教学楼A101',
-            invigilator: '张老师',
-            participantCount: 45,
-            status: '未开始'
-          },
-          {
-            id: 2,
-            index: 2,
-            semester: '2024-2025学年第一学期',
-            courseName: '数据结构',
-            examType: '期中考试',
-            examTime: '2024-11-20 14:00',
-            examLocation: '教学楼B203',
-            invigilator: '李老师',
-            participantCount: 42,
-            status: '已完成'
-          }
-        ];
-        this.pagination.total = this.exams.length;
+      try {
+        const params = {
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize,
+          semester: this.filters.semester || undefined,
+          courseName: this.filters.courseName || undefined,
+          examType: this.filters.examType || undefined
+        };
+        const res = await examArrangementApi.getExams(params);
+        if (res.data.success) {
+          this.exams = res.data.data.map((item, index) => ({
+            ...item,
+            index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
+          }));
+          this.pagination.total = res.data.total;
+        }
+      } catch (error) {
+        console.error('加载考试安排失败:', error);
+        this.$message.error('加载数据失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     getExamTypeColor(examType) {
       const colorMap = {
@@ -256,9 +248,15 @@ export default {
     handleEdit(record) {
       this.$message.info(`编辑考试安排：${record.courseName}`);
     },
-    handleDelete(record) {
-      this.$message.success(`已删除考试安排`);
-      this.loadExams();
+    async handleDelete(record) {
+      try {
+        await examArrangementApi.deleteExam(record.id);
+        this.$message.success(`已删除考试安排`);
+        this.loadExams();
+      } catch (error) {
+        console.error('删除失败:', error);
+        this.$message.error('删除失败');
+      }
     },
     handleTableChange(pagination) {
       this.pagination.current = pagination.current;

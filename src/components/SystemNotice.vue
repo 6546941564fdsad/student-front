@@ -83,6 +83,7 @@ import {
   ClockCircleOutlined,
   UserOutlined
 } from '@ant-design/icons-vue';
+import systemNoticeApi from '@/api/systemNotice';
 
 export default {
   name: 'SystemNotice',
@@ -104,62 +105,7 @@ export default {
       dateRange: null,
       currentPage: 1,
       pageSize: 10,
-      announcements: [
-        {
-          id: 1,
-          title: '关于开展2025年春季学期教学检查的通知',
-          content: '根据学校教学工作安排，将于3月10日-3月20日开展春季学期教学检查工作。请各学院做好自查准备，教务处将组织专家进行抽查。检查内容包括教学计划执行情况、课堂教学质量、实践教学环节等。',
-          priority: 'high',
-          date: '2025-03-01',
-          publishTime: '2025-03-01 09:00',
-          publisher: '教务处'
-        },
-        {
-          id: 2,
-          title: '2024-2025学年第二学期选课通知',
-          content: '请各位同学于3月5日前完成本学期课程选择，逾期将无法选课。选课期间如有问题请联系所在学院教务办公室。注意：部分热门课程名额有限，请及时选课。',
-          priority: 'high',
-          date: '2025-02-28',
-          publishTime: '2025-02-28 14:30',
-          publisher: '教务处'
-        },
-        {
-          id: 3,
-          title: '教务系统维护公告',
-          content: '系统将于3月15日 02:00-06:00进行升级维护，届时暂停服务。请各位老师提前安排好相关工作，避免在维护期间进行操作。维护完成后系统将恢复正常使用。',
-          priority: 'normal',
-          date: '2025-02-25',
-          publishTime: '2025-02-25 16:00',
-          publisher: '信息中心'
-        },
-        {
-          id: 4,
-          title: '关于规范课程考核方式的通知',
-          content: '为进一步规范教学管理，现对课程考核方式提出以下要求：1. 平时成绩占比不低于30%；2. 期末考试必须建立试题库；3. 实践类课程需提交过程性评价材料。',
-          priority: 'normal',
-          date: '2025-02-20',
-          publishTime: '2025-02-20 10:15',
-          publisher: '教务处'
-        },
-        {
-          id: 5,
-          title: '毕业设计（论文）工作安排',
-          content: '2025届毕业设计（论文）工作已正式启动，请各位指导教师和学生按照时间节点完成各环节工作。开题报告提交截止日期为3月10日。',
-          priority: 'high',
-          date: '2025-02-18',
-          publishTime: '2025-02-18 09:30',
-          publisher: '教务处'
-        },
-        {
-          id: 6,
-          title: '教师教学能力提升培训计划',
-          content: '学校将于3月份开展教师教学能力提升培训，内容包括现代教育技术应用、课程设计方法、教学评价等。欢迎各位教师报名参加。',
-          priority: 'normal',
-          date: '2025-02-15',
-          publishTime: '2025-02-15 14:00',
-          publisher: '教师发展中心'
-        }
-      ]
+      announcements: []
     };
   },
   computed: {
@@ -183,7 +129,25 @@ export default {
       return result;
     }
   },
+  mounted() {
+    this.loadNotices();
+  },
   methods: {
+    async loadNotices() {
+      try {
+        const params = this.filterPriority !== 'all' ? { priority: this.filterPriority } : {};
+        const res = await systemNoticeApi.getNotices(params);
+        if (res.data.success) {
+          this.announcements = res.data.data.map(item => ({
+            ...item,
+            date: item.publishTime ? item.publishTime.split(' ')[0] : ''
+          }));
+        }
+      } catch (error) {
+        console.error('加载公告失败:', error);
+        this.$message.error('加载数据失败');
+      }
+    },
     getDay(dateStr) {
       return new Date(dateStr).getDate();
     },
@@ -198,6 +162,7 @@ export default {
       // 日期变化时自动更新
     },
     refreshData() {
+      this.loadNotices();
       this.$message.success('数据已刷新');
     },
     viewAnnouncement(item) {

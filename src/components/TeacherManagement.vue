@@ -87,6 +87,7 @@
 
 <script>
 import { PlusOutlined, DownloadOutlined } from '@ant-design/icons-vue';
+import teacherApi from '../api/teacher';
 
 export default {
   name: 'TeacherManagement',
@@ -177,37 +178,31 @@ export default {
     this.loadTeachers();
   },
   methods: {
-    loadTeachers() {
+    async loadTeachers() {
       this.loading = true;
-      // 模拟数据
-      setTimeout(() => {
-        this.teachers = [
-          {
-            id: 1,
-            index: 1,
-            name: '张老师',
-            employeeId: 'T001',
-            gender: '男',
-            department: '计算机学院',
-            title: '教授',
-            phone: '13800138001',
-            status: '在职'
-          },
-          {
-            id: 2,
-            index: 2,
-            name: '李老师',
-            employeeId: 'T002',
-            gender: '女',
-            department: '软件学院',
-            title: '副教授',
-            phone: '13800138002',
-            status: '在职'
-          }
-        ];
-        this.pagination.total = this.teachers.length;
+      try {
+        const params = {
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize,
+          name: this.filters.name || undefined,
+          employeeId: this.filters.employeeId || undefined,
+          department: this.filters.department || undefined,
+          title: this.filters.title || undefined
+        };
+        const res = await teacherApi.getTeachers(params);
+        if (res.data.success) {
+          this.teachers = res.data.data.map((item, index) => ({
+            ...item,
+            index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
+          }));
+          this.pagination.total = res.data.total;
+        }
+      } catch (error) {
+        console.error('加载教师数据失败:', error);
+        this.$message.error('加载教师数据失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     handleSearch() {
       this.pagination.current = 1;

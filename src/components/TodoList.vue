@@ -86,6 +86,7 @@
 
 <script>
 import { ReloadOutlined } from '@ant-design/icons-vue';
+import todoApi from '@/api/todo';
 
 export default {
   name: 'TodoList',
@@ -102,68 +103,7 @@ export default {
     return {
       filterStatus: 'all',
       filterPriority: 'all',
-      todoList: [
-        {
-          id: 1,
-          title: '2024-2025学年第一学期成绩审核',
-          description: '待审核课程：25门，待审核学生：1250人',
-          status: 'processing',
-          priority: 'high',
-          priorityText: '紧急',
-          createTime: '2025-03-01 09:00',
-          deadline: '2025-03-10'
-        },
-        {
-          id: 2,
-          title: '下学期课程排课',
-          description: '待排课程：156门，已排：98门',
-          status: 'processing',
-          priority: 'high',
-          priorityText: '紧急',
-          createTime: '2025-02-28 14:30',
-          deadline: '2025-03-15'
-        },
-        {
-          id: 3,
-          title: '学生学籍异动审批',
-          description: '待审批申请：15条',
-          status: 'warning',
-          priority: 'medium',
-          priorityText: '重要',
-          createTime: '2025-02-27 10:15',
-          deadline: '2025-03-05'
-        },
-        {
-          id: 4,
-          title: '教师教学任务分配',
-          description: '待分配教师：32人',
-          status: 'processing',
-          priority: 'medium',
-          priorityText: '重要',
-          createTime: '2025-02-26 16:45',
-          deadline: '2025-03-08'
-        },
-        {
-          id: 5,
-          title: '毕业设计开题报告审核',
-          description: '待审核报告：89份',
-          status: 'warning',
-          priority: 'low',
-          priorityText: '普通',
-          createTime: '2025-02-25 11:20',
-          deadline: '2025-03-20'
-        },
-        {
-          id: 6,
-          title: '教材征订确认',
-          description: '待确认教材：45种',
-          status: 'processing',
-          priority: 'medium',
-          priorityText: '重要',
-          createTime: '2025-02-24 09:30',
-          deadline: '2025-03-12'
-        }
-      ]
+      todoList: []
     };
   },
   computed: {
@@ -192,7 +132,28 @@ export default {
       return this.todoList.filter(item => item.status === 'completed').length;
     }
   },
+  mounted() {
+    this.loadTodos();
+  },
   methods: {
+    async loadTodos() {
+      try {
+        const params = {};
+        if (this.filterStatus !== 'all') params.status = this.filterStatus;
+        if (this.filterPriority !== 'all') params.priority = this.filterPriority;
+        
+        const res = await todoApi.getTodos(params);
+        if (res.data.success) {
+          this.todoList = res.data.data.map(item => ({
+            ...item,
+            priorityText: item.priority === 'high' ? '紧急' : (item.priority === 'medium' ? '重要' : '普通')
+          }));
+        }
+      } catch (error) {
+        console.error('加载待办事项失败:', error);
+        this.$message.error('加载数据失败');
+      }
+    },
     getPriorityColor(priority) {
       const colorMap = {
         'high': 'red',
@@ -205,6 +166,7 @@ export default {
       // 筛选变化时自动更新
     },
     refreshData() {
+      this.loadTodos();
       this.$message.success('数据已刷新');
     },
     handleTodo(item) {

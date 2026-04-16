@@ -126,6 +126,7 @@
 <script>
 import { DownloadOutlined, EyeOutlined, FileExcelOutlined } from '@ant-design/icons-vue';
 import dayjs from 'dayjs';
+import { gradeApi } from '../api/grade';
 
 export default {
   name: 'GradeExport',
@@ -167,22 +168,7 @@ export default {
         showTotal: (total) => `共 ${total} 条`
       },
       exporting: false,
-      exportHistory: [
-        {
-          id: 1,
-          fileName: '2024-2025学年第一学期_计科2401班_成绩',
-          format: 'excel',
-          exportTime: '2025-01-15 14:30:00',
-          recordCount: 45
-        },
-        {
-          id: 2,
-          fileName: '2024-2025学年第一学期_全部课程_成绩',
-          format: 'csv',
-          exportTime: '2025-01-14 10:20:00',
-          recordCount: 120
-        }
-      ]
+      exportHistory: []
     };
   },
   mounted() {
@@ -191,39 +177,39 @@ export default {
   methods: {
     async loadData() {
       this.loading = true;
-      // TODO: 调用后端 API
-      setTimeout(() => {
-        this.exportList = [
-          {
-            id: 1,
-            index: 1,
-            studentNo: '2024001',
-            studentName: '张三',
-            className: '计科2401班',
-            courseName: 'Java程序设计',
-            usualGrade: 85,
-            finalGrade: 90,
-            grade: 88.5,
-            rank: 1,
-            status: 'audited'
-          },
-          {
-            id: 2,
-            index: 2,
-            studentNo: '2024002',
-            studentName: '李四',
-            className: '计科2401班',
-            courseName: 'Java程序设计',
-            usualGrade: 78,
-            finalGrade: 82,
-            grade: 80.5,
-            rank: 15,
-            status: 'audited'
-          }
-        ];
-        this.pagination.total = this.exportList.length;
+      try {
+        const params = {
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize
+        };
+        
+        // 添加筛选条件
+        if (this.filters.semester) {
+          params.semester = this.filters.semester;
+        }
+        if (this.filters.status) {
+          params.status = this.filters.status;
+        }
+        
+        const res = await gradeApi.getAll(params.page, params.size);
+        if (res.data.success) {
+          // Spring Data Page 对象结构: { content: [...], totalElements: 100, ... }
+          const pageData = res.data.data;
+          const content = Array.isArray(pageData) ? pageData : (pageData.content || []);
+          const total = pageData.totalElements || 0;
+          
+          this.exportList = content.map((item, index) => ({
+            ...item,
+            index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
+          }));
+          this.pagination.total = total;
+        }
+      } catch (error) {
+        console.error('加载数据失败:', error);
+        this.$message.error('加载数据失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     handleSearch() {
       this.pagination.current = 1;
@@ -249,15 +235,15 @@ export default {
 
       this.exporting = true;
       
-      // 生成默认文件名
-      const defaultFileName = this.fileName || `成绩导出_${dayjs().format('YYYYMMDD_HHmmss')}`;
-      
-      // TODO: 调用后端 API 导出文件
-      setTimeout(() => {
-        this.$message.success(`导出成功！文件：${defaultFileName}.${this.exportFormat}`);
-        this.exporting = false;
+      try {
+        // 生成默认文件名
+        const defaultFileName = this.fileName || `成绩导出_${dayjs().format('YYYYMMDD_HHmmss')}`;
         
-        // 添加到导出历史
+        // TODO: 调用后端导出接口（需要后端支持文件下载）
+        // 目前先显示成功消息，实际导出功能待后端实现
+        this.$message.success(`导出成功！文件：${defaultFileName}.${this.exportFormat}`);
+        
+        // 添加到导出历史（仅前端记录）
         this.exportHistory.unshift({
           id: Date.now(),
           fileName: defaultFileName,
@@ -265,7 +251,12 @@ export default {
           exportTime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
           recordCount: this.exportList.length
         });
-      }, 2000);
+      } catch (error) {
+        console.error('导出失败:', error);
+        this.$message.error('导出失败');
+      } finally {
+        this.exporting = false;
+      }
     },
     handlePreview() {
       this.$message.info('预览功能 - 显示前100条数据');

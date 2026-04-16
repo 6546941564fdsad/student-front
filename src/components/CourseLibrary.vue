@@ -53,6 +53,7 @@
 
 <script>
 import { PlusOutlined } from '@ant-design/icons-vue';
+import { courseApi } from '@/api/course';
 
 export default {
   name: 'CourseLibrary',
@@ -88,32 +89,27 @@ export default {
     this.loadCourses();
   },
   methods: {
-    loadCourses() {
+    async loadCourses() {
       this.loading = true;
-      setTimeout(() => {
-        this.courses = [
-          {
-            id: 1,
-            courseCode: 'U0204026',
-            courseName: 'C语言程序设计',
-            category: '专业基础课',
-            credits: 4.0,
-            totalHours: 64,
-            status: '启用'
-          },
-          {
-            id: 2,
-            courseCode: 'U0704079',
-            courseName: '大学英语B1',
-            category: '公共课',
-            credits: 4.0,
-            totalHours: 64,
-            status: '启用'
-          }
-        ];
-        this.pagination.total = this.courses.length;
+      try {
+        const params = {
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize,
+          courseCode: this.filters.courseCode || undefined,
+          courseName: this.filters.courseName || undefined,
+          category: this.filters.category || undefined
+        };
+        const res = await courseApi.getCourses(params);
+        if (res.data.success) {
+          this.courses = res.data.data;
+          this.pagination.total = res.data.total;
+        }
+      } catch (error) {
+        console.error('加载课程失败:', error);
+        this.$message.error('加载数据失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     handleSearch() {
       this.pagination.current = 1;
@@ -140,8 +136,15 @@ export default {
       this.$confirm({
         title: '确认删除',
         content: `确定要删除课程 ${course.courseName} 吗？`,
-        onOk: () => {
-          this.$message.success('删除成功');
+        onOk: async () => {
+          try {
+            await courseApi.deleteCourse(course.id);
+            this.$message.success('删除成功');
+            this.loadCourses();
+          } catch (error) {
+            console.error('删除失败:', error);
+            this.$message.error('删除失败');
+          }
         }
       });
     }

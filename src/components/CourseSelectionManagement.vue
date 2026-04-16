@@ -84,6 +84,7 @@
 
 <script>
 import { PlayCircleOutlined, StopOutlined, SwapOutlined, DownloadOutlined } from '@ant-design/icons-vue';
+import { courseSelectionApi } from '@/api/courseSelection';
 
 export default {
   name: 'CourseSelectionManagement',
@@ -181,39 +182,30 @@ export default {
     this.loadSelections();
   },
   methods: {
-    loadSelections() {
+    async loadSelections() {
       this.loading = true;
-      // 模拟数据
-      setTimeout(() => {
-        this.selections = [
-          {
-            id: 1,
-            index: 1,
-            semester: '2024-2025学年第一学期',
-            studentId: '2021001',
-            studentName: '张三',
-            courseName: 'Java程序设计',
-            teacher: '张老师',
-            credits: 4.0,
-            selectionTime: '2024-09-01 10:30:00',
-            status: '已确认'
-          },
-          {
-            id: 2,
-            index: 2,
-            semester: '2024-2025学年第一学期',
-            studentId: '2021002',
-            studentName: '李四',
-            courseName: '数据结构',
-            teacher: '李老师',
-            credits: 3.0,
-            selectionTime: '2024-09-01 11:20:00',
-            status: '待审核'
-          }
-        ];
-        this.pagination.total = this.selections.length;
+      try {
+        const params = {
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize,
+          semester: this.filters.semester || undefined,
+          courseName: this.filters.courseName || undefined,
+          studentName: this.filters.studentName || undefined
+        };
+        const res = await courseSelectionApi.getSelections(params);
+        if (res.data.success) {
+          this.selections = res.data.data.map((item, index) => ({
+            ...item,
+            index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
+          }));
+          this.pagination.total = res.data.total;
+        }
+      } catch (error) {
+        console.error('加载选课记录失败:', error);
+        this.$message.error('加载数据失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     getStatusColor(status) {
       const colorMap = {
@@ -254,9 +246,15 @@ export default {
     handleCancel(record) {
       this.$message.info(`退课处理：${record.studentName} - ${record.courseName}`);
     },
-    handleDelete(record) {
-      this.$message.success(`已删除选课记录`);
-      this.loadSelections();
+    async handleDelete(record) {
+      try {
+        await courseSelectionApi.deleteSelection(record.id);
+        this.$message.success(`已删除选课记录`);
+        this.loadSelections();
+      } catch (error) {
+        console.error('删除失败:', error);
+        this.$message.error('删除失败');
+      }
     },
     handleTableChange(pagination) {
       this.pagination.current = pagination.current;

@@ -207,26 +207,14 @@ export default {
       showEditForm: false,
       currentStudent: null,
       activeTab: 'basic',
-      // 模拟课程数据
-      studentCourses: [
-        { id: 1, name: '高等数学', credit: 5, score: 85, semester: '2024-2025 第一学期' },
-        { id: 2, name: '大学英语', credit: 4, score: 78, semester: '2024-2025 第一学期' },
-        { id: 3, name: '计算机基础', credit: 3, score: 92, semester: '2024-2025 第一学期' },
-        { id: 4, name: '数据结构', credit: 4, score: 88, semester: '2024-2025 第二学期' },
-        { id: 5, name: '操作系统', credit: 4, score: 76, semester: '2024-2025 第二学期' }
-      ],
-      // 模拟奖励数据
-      studentRewards: [
-        { title: '校级三好学生', description: '2024 年度校级三好学生荣誉称号', date: '2024-09-10' },
-        { title: '奖学金', description: '获得 2024 年度一等奖学金', date: '2024-10-15' }
-      ],
-      // 模拟惩处数据
+      // 课程数据（从后端获取）
+      studentCourses: [],
+      // 奖励数据（从后端获取）
+      studentRewards: [],
+      // 惩处数据（从后端获取）
       studentPunishments: [],
-      // 模拟活动数据
-      studentActivities: [
-        { id: 1, name: '2024 年秋季校运会', type: '校运会', status: '已结束', award: '一等奖', comprehensiveScore: 5, date: '2024-10-20' },
-        { id: 2, name: '计算机学术讲座', type: '学术讲座', status: '已结束', award: null, comprehensiveScore: 2, date: '2024-11-15' }
-      ],
+      // 活动数据（从后端获取）
+      studentActivities: [],
       courseColumns: [
         { title: '课程名称', dataIndex: 'name', key: 'name' },
         { title: '学期', dataIndex: 'semester', key: 'semester', width: 180 },
@@ -262,26 +250,20 @@ export default {
     async fetchStudentProfile() {
       this.loading = true;
       try {
-        // 实际应该调用 API 获取学生详细信息
-        // const response = await studentApi.getStudentById(this.studentId);
-        // this.student = response.data;
-        
-        // 模拟数据
-        this.student = {
-          id: this.studentId,
-          name: '张三',
-          age: 20,
-          gender: '男',
-          studentId: '2024001',
-          college: '大数据学院',
-          major: '计算机科学与技术',
-          className: '计科 2024 级 1 班',
-          grade: '2024',
-          status: '在校',
-          email: 'zhangsan@example.com',
-          phone: '13800138000',
-          enrollmentDate: '2024-09-01'
-        };
+        // 调用 API 获取学生详细信息
+        const response = await studentApi.getStudent(this.studentId);
+        if (response.data.success) {
+          this.student = response.data.data;
+          
+          // TODO: 加载学生的课程、奖励、活动等信息
+          // 这些需要后端提供对应的接口，目前先保持空数组
+          this.studentCourses = [];
+          this.studentRewards = [];
+          this.studentPunishments = [];
+          this.studentActivities = [];
+        } else {
+          this.$message.error('获取学生信息失败');
+        }
       } catch (error) {
         console.error('获取学生档案失败:', error);
         this.$message.error('获取学生档案失败');
@@ -299,10 +281,10 @@ export default {
     async saveProfile(formData) {
       this.loading = true;
       try {
-        // 实际应该调用 API 更新学生信息
-        // await studentApi.updateStudent(this.student.id, formData);
+        // 调用 API 更新学生信息
+        await studentApi.updateStudent(this.student.id, formData);
         
-        // 模拟更新
+        // 更新本地数据
         this.student = { ...this.student, ...formData };
         this.$message.success('编辑档案成功');
         this.showEditForm = false;

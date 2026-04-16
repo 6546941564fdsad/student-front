@@ -75,6 +75,7 @@
 
 <script>
 import { PlusOutlined, DownloadOutlined } from '@ant-design/icons-vue';
+import { teachingTaskApi } from '@/api/teachingTask';
 
 export default {
   name: 'TeachingTask',
@@ -165,37 +166,29 @@ export default {
     this.loadTasks();
   },
   methods: {
-    loadTasks() {
+    async loadTasks() {
       this.loading = true;
-      // 模拟数据
-      setTimeout(() => {
-        this.tasks = [
-          {
-            id: 1,
-            index: 1,
-            semester: '2024-2025学年第一学期',
-            courseName: 'Java程序设计',
-            teacher: '张老师',
-            className: '计算机2021级1班',
-            hours: 64,
-            credits: 4.0,
-            status: '进行中'
-          },
-          {
-            id: 2,
-            index: 2,
-            semester: '2024-2025学年第一学期',
-            courseName: '数据结构',
-            teacher: '李老师',
-            className: '计算机2021级2班',
-            hours: 48,
-            credits: 3.0,
-            status: '已完成'
-          }
-        ];
-        this.pagination.total = this.tasks.length;
+      try {
+        const params = {
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize,
+          semester: this.filters.semester || undefined,
+          courseName: this.filters.courseName || undefined
+        };
+        const res = await teachingTaskApi.getTasks(params);
+        if (res.data.success) {
+          this.tasks = res.data.data.map((item, index) => ({
+            ...item,
+            index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
+          }));
+          this.pagination.total = res.data.total;
+        }
+      } catch (error) {
+        console.error('加载教学任务失败:', error);
+        this.$message.error('加载数据失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     getStatusColor(status) {
       const colorMap = {
@@ -230,9 +223,15 @@ export default {
     handleEdit(record) {
       this.$message.info(`编辑教学任务：${record.courseName}`);
     },
-    handleDelete(record) {
-      this.$message.success(`已删除教学任务：${record.courseName}`);
-      this.loadTasks();
+    async handleDelete(record) {
+      try {
+        await teachingTaskApi.deleteTask(record.id);
+        this.$message.success(`已删除教学任务：${record.courseName}`);
+        this.loadTasks();
+      } catch (error) {
+        console.error('删除失败:', error);
+        this.$message.error('删除失败');
+      }
     },
     handleTableChange(pagination) {
       this.pagination.current = pagination.current;
