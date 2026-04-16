@@ -109,6 +109,7 @@
 
 <script>
 import { DownloadOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import { systemLogApi } from '@/api/systemLog';
 
 export default {
   name: 'SystemLog',
@@ -195,57 +196,30 @@ export default {
     this.loadLogs();
   },
   methods: {
-    loadLogs() {
+    async loadLogs() {
       this.loading = true;
-      // 模拟数据
-      setTimeout(() => {
-        this.logs = [
-          {
-            id: 1,
-            index: 1,
-            operator: 'admin',
-            operationTime: '2025-01-15 10:30:25',
-            operationType: '登录',
-            module: '系统登录',
-            ipAddress: '192.168.1.100',
-            status: 'success',
-            method: 'POST /api/auth/login',
-            requestParams: '{"username":"admin","password":"******"}',
-            responseResult: '{"code":200,"message":"登录成功"}',
-            errorMessage: null
-          },
-          {
-            id: 2,
-            index: 2,
-            operator: 'admin',
-            operationTime: '2025-01-15 10:35:12',
-            operationType: '新增',
-            module: '学生管理',
-            ipAddress: '192.168.1.100',
-            status: 'success',
-            method: 'POST /api/students',
-            requestParams: '{"name":"张三","studentId":"2021001"}',
-            responseResult: '{"code":200,"message":"新增成功"}',
-            errorMessage: null
-          },
-          {
-            id: 3,
-            index: 3,
-            operator: 'teacher1',
-            operationTime: '2025-01-15 11:20:45',
-            operationType: '修改',
-            module: '成绩管理',
-            ipAddress: '192.168.1.105',
-            status: 'error',
-            method: 'PUT /api/grades/1',
-            requestParams: '{"score":95}',
-            responseResult: null,
-            errorMessage: '数据库连接超时'
-          }
-        ];
-        this.pagination.total = this.logs.length;
+      try {
+        const params = {
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize,
+          operator: this.filters.operator || undefined,
+          operationType: this.filters.operationType || undefined,
+          status: this.filters.status || undefined
+        };
+        const res = await systemLogApi.getLogs(params);
+        if (res.data.success) {
+          this.logs = res.data.data.map((item, index) => ({
+            ...item,
+            index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
+          }));
+          this.pagination.total = res.data.total;
+        }
+      } catch (error) {
+        console.error('加载系统日志失败:', error);
+        this.$message.error('加载数据失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     handleSearch() {
       this.pagination.current = 1;
@@ -264,7 +238,20 @@ export default {
       this.$message.success('日志导出成功');
     },
     handleClear() {
-      this.$message.warning('清空日志功能需要管理员权限');
+      this.$confirm({
+        title: '确认清空',
+        content: '确定要清空所有系统日志吗？此操作不可恢复。',
+        onOk: async () => {
+          try {
+            await systemLogApi.clearLogs();
+            this.$message.success('日志已清空');
+            this.loadLogs();
+          } catch (error) {
+            console.error('清空失败:', error);
+            this.$message.error('清空失败');
+          }
+        }
+      });
     },
     handleView(record) {
       this.currentLog = record;

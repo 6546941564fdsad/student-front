@@ -133,6 +133,7 @@ import {
   ReloadOutlined,
   DownloadOutlined
 } from '@ant-design/icons-vue';
+import statisticsApi from '../api/statistics';
 
 export default {
   name: 'DataStats',
@@ -154,11 +155,12 @@ export default {
   },
   data() {
     return {
+      loading: false,
       stats: {
-        totalStudents: 12580,
-        totalTeachers: 856,
-        totalCourses: 1245,
-        avgScore: 82.5
+        totalStudents: 0,
+        totalTeachers: 0,
+        totalCourses: 0,
+        avgScore: 0
       },
       collegeColumns: [
         { title: '学院名称', dataIndex: 'name', key: 'name' },
@@ -167,23 +169,37 @@ export default {
         { title: '课程数量', dataIndex: 'courseCount', key: 'courseCount' },
         { title: '占比', dataIndex: 'percentage', key: 'percentage' }
       ],
-      collegeData: [
-        { key: '1', name: '计算机学院', studentCount: 2850, teacherCount: 186, courseCount: 245, percentage: '22.7%' },
-        { key: '2', name: '工程学院', studentCount: 2340, teacherCount: 152, courseCount: 198, percentage: '18.6%' },
-        { key: '3', name: '商学院', studentCount: 1980, teacherCount: 128, courseCount: 176, percentage: '15.7%' },
-        { key: '4', name: '文学院', studentCount: 1650, teacherCount: 112, courseCount: 154, percentage: '13.1%' },
-        { key: '5', name: '理学院', studentCount: 1520, teacherCount: 98, courseCount: 142, percentage: '12.1%' },
-        { key: '6', name: '艺术学院', studentCount: 1240, teacherCount: 86, courseCount: 130, percentage: '9.9%' },
-        { key: '7', name: '其他学院', studentCount: 1000, teacherCount: 94, courseCount: 200, percentage: '7.9%' }
-      ]
+      collegeData: []
     };
+  },
+  mounted() {
+    this.loadStats();
   },
   methods: {
     formatNumber(num) {
       return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     },
+    async loadStats() {
+      this.loading = true;
+      try {
+        const res = await statisticsApi.getOverview();
+        if (res.data.success) {
+          this.stats = res.data.data;
+        }
+        
+        const collegeRes = await statisticsApi.getCollegeDistribution();
+        if (collegeRes.data.success) {
+          this.collegeData = collegeRes.data.data;
+        }
+      } catch (error) {
+        console.error('加载统计数据失败:', error);
+        this.$message.error('加载统计数据失败');
+      } finally {
+        this.loading = false;
+      }
+    },
     refreshData() {
-      this.$message.success('数据已刷新');
+      this.loadStats();
     },
     exportData() {
       this.$message.success('数据导出成功');

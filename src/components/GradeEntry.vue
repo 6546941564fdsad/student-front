@@ -130,6 +130,8 @@
 
 <script>
 import { PlusOutlined, UploadOutlined, SaveOutlined } from '@ant-design/icons-vue';
+import gradeApi from '../api/grade';
+import eventBus from '../utils/eventBus';
 
 export default {
   name: 'GradeEntry',
@@ -182,37 +184,32 @@ export default {
   methods: {
     async loadData() {
       this.loading = true;
-      // TODO: 调用后端 API
-      setTimeout(() => {
-        this.gradeList = [
-          {
-            id: 1,
-            index: 1,
-            studentNo: '2024001',
-            studentName: '张三',
-            className: '计科2401班',
-            courseName: 'Java程序设计',
-            usualGrade: 85,
-            finalGrade: 90,
-            grade: 88.5,
-            status: 'draft'
-          },
-          {
-            id: 2,
-            index: 2,
-            studentNo: '2024002',
-            studentName: '李四',
-            className: '计科2401班',
-            courseName: 'Java程序设计',
-            usualGrade: 78,
-            finalGrade: 82,
-            grade: 80.5,
-            status: 'draft'
-          }
-        ];
-        this.pagination.total = this.gradeList.length;
+      try {
+        const params = {
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize,
+          semester: this.filters.semester || undefined,
+          status: 'draft'
+        };
+        const res = await gradeApi.getAll(params.page, params.size);
+        if (res.data.success) {
+          // Spring Data Page 对象结构: { content: [...], totalElements: 100, ... }
+          const pageData = res.data.data;
+          const content = Array.isArray(pageData) ? pageData : (pageData.content || []);
+          const total = pageData.totalElements || 0;
+          
+          this.gradeList = content.map((item, index) => ({
+            ...item,
+            index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
+          }));
+          this.pagination.total = total;
+        }
+      } catch (error) {
+        console.error('加载成绩数据失败:', error);
+        this.$message.error('加载成绩数据失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     handleSearch() {
       this.pagination.current = 1;
@@ -238,13 +235,28 @@ export default {
     },
     async handleBatchSubmit() {
       this.submitLoading = true;
-      // TODO: 调用后端 API 批量提交
-      setTimeout(() => {
-        this.$message.success('批量录入成功！');
-        this.batchModalVisible = false;
+      try {
+        const grades = this.batchGradeList.map(item => ({
+          studentNo: item.studentNo,
+          grade: item.grade
+        }));
+        const res = await gradeApi.batchAdd(grades);
+        if (res.data.success) {
+          this.$message.success(res.data.message || '批量录入成功！');
+          this.batchModalVisible = false;
+          this.loadData();
+          
+          // 通知 Dashboard 数据已变化
+          eventBus.emit('data-changed', { module: 'grade', action: 'add' });
+        } else {
+          this.$message.error(res.data.message || '批量录入失败');
+        }
+      } catch (error) {
+        console.error('批量录入失败:', error);
+        this.$message.error('批量录入失败');
+      } finally {
         this.submitLoading = false;
-        this.loadData();
-      }, 1000);
+      }
     },
     handleBatchCancel() {
       this.batchModalVisible = false;
@@ -259,9 +271,18 @@ export default {
       this.$message.info(`编辑 ${record.studentName} 的成绩`);
     },
     async handleDelete(id) {
-      // TODO: 调用后端 API 删除
-      this.$message.success('删除成功');
-      this.loadData();
+      try {
+        const res = await gradeApi.delete(id);
+        if (res.data.success) {
+          this.$message.success(res.data.message || '删除成功');
+          this.loadData();
+        } else {
+          this.$message.error(res.data.message || '删除失败');
+        }
+      } catch (error) {
+        console.error('删除失败:', error);
+        this.$message.error('删除失败');
+      }
     },
     getStatusText(status) {
       const map = {

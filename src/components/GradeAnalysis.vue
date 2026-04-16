@@ -157,6 +157,7 @@
 <script>
 import { TeamOutlined, TrophyOutlined, RiseOutlined, FallOutlined } from '@ant-design/icons-vue';
 import * as echarts from 'echarts';
+import gradeApi from '../api/grade';
 
 export default {
   name: 'GradeAnalysis',
@@ -221,51 +222,46 @@ export default {
   methods: {
     async loadData() {
       this.loading = true;
-      // TODO: 调用后端 API
-      setTimeout(() => {
-        this.statistics = {
-          totalCount: 120,
-          avgGrade: 82.5,
-          maxGrade: 98,
-          minGrade: 45
-        };
+      try {
+        // 获取统计数据
+        const statsRes = await gradeApi.getStatistics();
+        if (statsRes.data.success) {
+          this.statistics = statsRes.data.data || {
+            totalCount: 0,
+            avgGrade: 0,
+            maxGrade: 0,
+            minGrade: 0
+          };
+        }
         
-        this.analysisList = [
-          {
-            id: 1,
-            index: 1,
-            courseName: 'Java程序设计',
-            teacherName: '张老师',
-            semester: '2024-2025学年第一学期',
-            className: '计科2401班',
-            totalCount: 45,
-            avgGrade: 82.5,
-            maxGrade: 95,
-            minGrade: 60,
-            passRate: 93.3,
-            excellentRate: 35.6
-          },
-          {
-            id: 2,
-            index: 2,
-            courseName: '数据结构',
-            teacherName: '李老师',
-            semester: '2024-2025学年第一学期',
-            className: '计科2402班',
-            totalCount: 42,
-            avgGrade: 78.3,
-            maxGrade: 92,
-            minGrade: 55,
-            passRate: 88.1,
-            excellentRate: 28.6
-          }
-        ];
-        this.pagination.total = this.analysisList.length;
-        this.loading = false;
+        // 获取分析列表
+        const params = {
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize,
+          semester: this.filters.semester || undefined
+        };
+        const res = await gradeApi.getAll(params.page, params.size);
+        if (res.data.success) {
+          // Spring Data Page 对象结构: { content: [...], totalElements: 100, ... }
+          const pageData = res.data.data;
+          const content = Array.isArray(pageData) ? pageData : (pageData.content || []);
+          const total = pageData.totalElements || 0;
+          
+          this.analysisList = content.map((item, index) => ({
+            ...item,
+            index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
+          }));
+          this.pagination.total = total;
+        }
         
         // 更新图表
         this.updateCharts();
-      }, 500);
+      } catch (error) {
+        console.error('加载成绩分析数据失败:', error);
+        this.$message.error('加载成绩分析数据失败');
+      } finally {
+        this.loading = false;
+      }
     },
     initCharts() {
       // 成绩分布图

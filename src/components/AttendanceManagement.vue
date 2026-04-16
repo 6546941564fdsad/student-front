@@ -89,6 +89,7 @@
 
 <script>
 import { PlusOutlined, DownloadOutlined, BarChartOutlined } from '@ant-design/icons-vue';
+import { attendanceApi } from '@/api/attendance';
 
 export default {
   name: 'AttendanceManagement',
@@ -179,37 +180,31 @@ export default {
     this.loadAttendances();
   },
   methods: {
-    loadAttendances() {
+    async loadAttendances() {
       this.loading = true;
-      // 模拟数据
-      setTimeout(() => {
-        this.attendances = [
-          {
-            id: 1,
-            index: 1,
-            semester: '2024-2025学年第一学期',
-            studentId: '2021001',
-            studentName: '张三',
-            courseName: 'Java程序设计',
-            classTime: '2024-11-15 08:00',
-            status: '出勤',
-            recordTime: '2024-11-15 08:05:00'
-          },
-          {
-            id: 2,
-            index: 2,
-            semester: '2024-2025学年第一学期',
-            studentId: '2021002',
-            studentName: '李四',
-            courseName: '数据结构',
-            classTime: '2024-11-15 10:00',
-            status: '迟到',
-            recordTime: '2024-11-15 10:15:00'
-          }
-        ];
-        this.pagination.total = this.attendances.length;
+      try {
+        const params = {
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize,
+          semester: this.filters.semester || undefined,
+          courseName: this.filters.courseName || undefined,
+          studentName: this.filters.studentName || undefined,
+          status: this.filters.status || undefined
+        };
+        const res = await attendanceApi.getAttendances(params);
+        if (res.data.success) {
+          this.attendances = res.data.data.map((item, index) => ({
+            ...item,
+            index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
+          }));
+          this.pagination.total = res.data.total;
+        }
+      } catch (error) {
+        console.error('加载考勤记录失败:', error);
+        this.$message.error('加载数据失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     getStatusColor(status) {
       const colorMap = {
@@ -248,9 +243,15 @@ export default {
     handleEdit(record) {
       this.$message.info(`编辑考勤记录：${record.studentName} - ${record.courseName}`);
     },
-    handleDelete(record) {
-      this.$message.success(`已删除考勤记录`);
-      this.loadAttendances();
+    async handleDelete(record) {
+      try {
+        await attendanceApi.deleteAttendance(record.id);
+        this.$message.success(`已删除考勤记录`);
+        this.loadAttendances();
+      } catch (error) {
+        console.error('删除失败:', error);
+        this.$message.error('删除失败');
+      }
     },
     handleTableChange(pagination) {
       this.pagination.current = pagination.current;

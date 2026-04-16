@@ -86,6 +86,7 @@
 
 <script>
 import { PlusOutlined, DownloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons-vue';
+import competitionApi from '../api/competition';
 
 export default {
   name: 'InnovationManagement',
@@ -177,37 +178,30 @@ export default {
     this.loadCompetitions();
   },
   methods: {
-    loadCompetitions() {
+    async loadCompetitions() {
       this.loading = true;
-      // 模拟数据
-      setTimeout(() => {
-        this.competitions = [
-          {
-            id: 1,
-            index: 1,
-            competitionName: '全国大学生程序设计竞赛',
-            studentName: '张三',
-            studentId: '2021001',
-            level: '国家级',
-            awardLevel: '一等奖',
-            credits: 5.0,
-            awardTime: '2024-10-15'
-          },
-          {
-            id: 2,
-            index: 2,
-            competitionName: '省级数学建模竞赛',
-            studentName: '李四',
-            studentId: '2021002',
-            level: '省级',
-            awardLevel: '二等奖',
-            credits: 3.0,
-            awardTime: '2024-09-20'
-          }
-        ];
-        this.pagination.total = this.competitions.length;
+      try {
+        const params = {
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize,
+          competitionName: this.filters.competitionName || undefined,
+          level: this.filters.level || undefined,
+          awardLevel: this.filters.awardLevel || undefined
+        };
+        const res = await competitionApi.getAll(params.page, params.size);
+        if (res.data.success) {
+          this.competitions = res.data.data.map((item, index) => ({
+            ...item,
+            index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
+          }));
+          this.pagination.total = res.data.total;
+        }
+      } catch (error) {
+        console.error('加载竞赛数据失败:', error);
+        this.$message.error('加载竞赛数据失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     getAwardColor(awardLevel) {
       const colorMap = {

@@ -86,6 +86,10 @@
 
 <script>
 import { FileTextOutlined, ClockCircleOutlined, CheckCircleOutlined, DollarCircleOutlined, PlusOutlined, DownloadOutlined, UploadOutlined } from '@ant-design/icons-vue';
+import creditRecognitionApi from '../api/creditRecognition';
+import studentApi from '../api/student';
+import eventBus from '../utils/eventBus';
+import { parsePageResponse } from '../utils/responseHandler';
 
 export default {
   name: 'CreditRecognition',
@@ -117,7 +121,7 @@ export default {
         achievementName: [{ required: true, message: '请输入成果名称', trigger: 'blur' }],
         credits: [{ required: true, message: '请输入认定学分', trigger: 'blur' }]
       },
-      studentOptions: [{ id: 1, name: '张三', studentNo: '2024001' }, { id: 2, name: '李四', studentNo: '2024002' }],
+      studentOptions: [],
       approveVisible: false,
       approveOpinion: '',
       approveResult: 'approved',
@@ -125,31 +129,134 @@ export default {
       detailVisible: false
     };
   },
-  mounted() { this.loadData(); this.loadStatistics(); },
+  mounted() { 
+    this.loadData(); 
+    this.loadStatistics();
+    this.loadStudentOptions();
+  },
   methods: {
     async loadData() {
       this.loading = true;
-      setTimeout(() => {
-        this.recognitionList = [
-          { id: 1, index: 1, studentName: '张三', studentNo: '2024001', type: '竞赛获奖', achievementName: '全国大学生程序设计竞赛一等奖', credits: 3, applyTime: '2025-01-10 10:30:00', status: 'pending' },
-          { id: 2, index: 2, studentName: '李四', studentNo: '2024002', type: '项目成果', achievementName: '省级大创项目结题', credits: 2, applyTime: '2025-01-08 14:20:00', status: 'approved', auditTime: '2025-01-09 09:15:00', auditOpinion: '符合认定标准，予以通过' }
-        ];
-        this.pagination.total = this.recognitionList.length;
+      try {
+        const params = {
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize
+        };
+        
+        // 添加筛选条件
+        if (this.filters.studentName) {
+          params.studentName = this.filters.studentName;
+        }
+        if (this.filters.type) {
+          params.type = this.filters.type;
+        }
+        if (this.filters.status) {
+          params.status = this.filters.status;
+        }
+        
+        const res = await creditRecognitionApi.getAll(params.page, params.size);
+        if (res.data.success) {
+          const { list, total } = parsePageResponse(res.data);
+          this.recognitionList = list.map((item, index) => ({
+            ...item,
+            index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
+          }));
+          this.pagination.total = total;
+        }
+      } catch (error) {
+        console.error('加载数据失败:', error);
+        this.$message.error('加载数据失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
-    async loadStatistics() { this.statistics = { totalCount: 32, pendingCount: 8, approvedCount: 24, totalCredits: 68.5 }; },
+    async loadStatistics() {
+      try {
+        const res = await creditRecognitionApi.getStatistics();
+        if (res.data.success) {
+          this.statistics = res.data.data;
+        }
+      } catch (error) {
+        console.error('加载统计数据失败:', error);
+      }
+    },
+    async loadStudentOptions() {
+      try {
+        // 获取所有学生作为选项
+        const res = await studentApi.getAll(0, 1000);
+        if (res.data.success) {
+          this.studentOptions = res.data.data.map(s => ({
+            id: s.id,
+            name: s.name,
+            studentNo: s.studentNo
+          }));
+        }
+      } catch (error) {
+        console.error('加载学生列表失败:', error);
+      }
+    },
     handleSearch() { this.pagination.current = 1; this.loadData(); },
     handleReset() { this.filters = { studentName: '', type: '', status: '' }; this.pagination.current = 1; this.loadData(); },
     handleTableChange(pagination) { this.pagination.current = pagination.current; this.pagination.pageSize = pagination.pageSize; this.loadData(); },
     showAddModal() { this.resetForm(); this.modalVisible = true; },
     resetForm() { this.form = { studentId: undefined, type: undefined, achievementName: '', credits: 2, description: '' }; if (this.$refs.formRef) this.$refs.formRef.clearValidate(); },
-    async handleSubmit() { try { await this.$refs.formRef.validate(); } catch (error) { this.$message.warning('请检查表单'); return; } this.submitLoading = true; setTimeout(() => { this.$message.success('申请提交成功'); this.modalVisible = false; this.submitLoading = false; this.loadData(); this.loadStatistics(); }, 1000); },
+    async handleSubmit() { 
+      try { 
+        await this.$refs.formRef.validate(); 
+      } catch (error) { 
+        this.$message.warning('请检查表单'); 
+        return; 
+      } 
+      
+      this.submitLoading = true;
+      try {
+        await creditRecognitionApi.add(this.form);
+        this.$message.success('申请提交成功');
+        this.modalVisible = false;
+        this.loadData();
+        this.loadStatistics();
+        
+        // 通知 Dashboard 数据已变化
+        eventBus.emit('data-changed', { module: 'credit', action: 'add' });
+      } catch (error) {
+        console.error('提交失败:', error);
+        this.$message.error('提交失败');
+      } finally {
+        this.submitLoading = false;
+      }
+    },
     handleCancel() { this.modalVisible = false; this.resetForm(); },
     showApproveModal(record) { this.currentRecord = record; this.approveOpinion = ''; this.approveResult = 'approved'; this.approveVisible = true; },
-    async handleApprove() { this.$message.success(this.approveResult === 'approved' ? '审核通过' : '已驳回'); this.approveVisible = false; this.loadData(); this.loadStatistics(); },
+    async handleApprove() {
+      try {
+        await creditRecognitionApi.audit(this.currentRecord.id, {
+          result: this.approveResult,
+          opinion: this.approveOpinion
+        });
+        this.$message.success(this.approveResult === 'approved' ? '审核通过' : '已驳回');
+        this.approveVisible = false;
+        this.loadData();
+        this.loadStatistics();
+        
+        // 通知 Dashboard 数据已变化
+        eventBus.emit('data-changed', { module: 'credit', action: 'audit' });
+      } catch (error) {
+        console.error('审核失败:', error);
+        this.$message.error('审核失败');
+      }
+    },
     showDetail(record) { this.currentRecord = record; this.detailVisible = true; },
-    async handleDelete(id) { this.$message.success('删除成功'); this.loadData(); this.loadStatistics(); },
+    async handleDelete(id) {
+      try {
+        await creditRecognitionApi.delete(id);
+        this.$message.success('删除成功');
+        this.loadData();
+        this.loadStatistics();
+      } catch (error) {
+        console.error('删除失败:', error);
+        this.$message.error('删除失败');
+      }
+    },
     handleExport() { this.$message.info('导出功能开发中...'); },
     getStatusText(status) { const map = { 'pending': '待审核', 'approved': '已通过', 'rejected': '已驳回' }; return map[status] || status; },
     getStatusColor(status) { const map = { 'pending': 'orange', 'approved': 'green', 'rejected': 'red' }; return map[status] || 'default'; }

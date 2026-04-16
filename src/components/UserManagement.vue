@@ -39,6 +39,7 @@
 
 <script>
 import { PlusOutlined } from '@ant-design/icons-vue';
+import { userApi } from '@/api/user';
 
 export default {
   name: 'UserManagement',
@@ -62,44 +63,25 @@ export default {
         { title: '最后登录', dataIndex: 'lastLogin', key: 'lastLogin', width: 160 },
         { title: '操作', key: 'action', width: 220, fixed: 'right' }
       ],
-      users: [
-        {
-          id: 1,
-          username: 'admin',
-          name: '系统管理员',
-          role: '超级管理员',
-          department: '信息中心',
-          phone: '13800138000',
-          status: '启用',
-          lastLogin: '2025-03-06 10:30:00'
-        },
-        {
-          id: 2,
-          username: 'teacher01',
-          name: '王老师',
-          role: '教师',
-          department: '大数据与计算机学院',
-          phone: '13900139000',
-          status: '启用',
-          lastLogin: '2025-03-05 16:20:00'
-        },
-        {
-          id: 3,
-          username: 'student01',
-          name: '张同学',
-          role: '学生',
-          department: '计科2401班',
-          phone: '13700137000',
-          status: '启用',
-          lastLogin: '2025-03-04 09:15:00'
-        }
-      ]
+      users: []
     };
   },
   mounted() {
-    this.pagination.total = this.users.length;
+    this.loadUsers();
   },
   methods: {
+    async loadUsers() {
+      try {
+        const res = await userApi.getUsers();
+        if (res.data.success) {
+          this.users = res.data.data;
+          this.pagination.total = this.users.length;
+        }
+      } catch (error) {
+        console.error('加载用户失败:', error);
+        this.$message.error('加载数据失败');
+      }
+    },
     getRoleColor(role) {
       const colorMap = {
         '超级管理员': 'red',

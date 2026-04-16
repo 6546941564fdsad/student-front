@@ -268,6 +268,11 @@ import {
   ThunderboltOutlined
 } from '@ant-design/icons-vue';
 
+import statisticsApi from '../api/statistics';
+import todoApi from '../api/todo';
+import systemNoticeApi from '../api/systemNotice';
+import eventBus from '../utils/eventBus';
+
 export default {
   name: 'Dashboard',
   components: {
@@ -295,85 +300,25 @@ export default {
   },
   data() {
     return {
+      loading: false,
       stats: {
-        totalStudents: 12580,
-        totalTeachers: 856,
-        totalCourses: 1245,
-        pendingItems: 23
+        totalStudents: 0,
+        totalTeachers: 0,
+        totalCourses: 0,
+        pendingItems: 0
       },
-      todoList: [
-        {
-          id: 1,
-          title: '2024-2025学年第一学期成绩审核',
-          description: '待审核课程：25门，待审核学生：1250人',
-          status: 'processing',
-          priority: 'high',
-          priorityText: '紧急'
-        },
-        {
-          id: 2,
-          title: '下学期课程排课',
-          description: '待排课程：156门，已排：98门',
-          status: 'processing',
-          priority: 'high',
-          priorityText: '紧急'
-        },
-        {
-          id: 3,
-          title: '学生学籍异动审批',
-          description: '待审批申请：15条',
-          status: 'warning',
-          priority: 'medium',
-          priorityText: '重要'
-        },
-        {
-          id: 4,
-          title: '教师教学任务分配',
-          description: '待分配教师：32人',
-          status: 'processing',
-          priority: 'medium',
-          priorityText: '重要'
-        },
-        {
-          id: 5,
-          title: '毕业设计开题报告审核',
-          description: '待审核报告：89份',
-          status: 'warning',
-          priority: 'low',
-          priorityText: '普通'
-        }
-      ],
-      announcements: [
-        {
-          id: 1,
-          title: '关于开展2025年春季学期教学检查的通知',
-          content: '根据学校教学工作安排，将于3月10日-3月20日开展春季学期教学检查...',
-          priority: 'high',
-          date: '2025-03-01'
-        },
-        {
-          id: 2,
-          title: '2024-2025学年第二学期选课通知',
-          content: '请各位同学于3月5日前完成本学期课程选择，逾期将无法选课...',
-          priority: 'high',
-          date: '2025-02-28'
-        },
-        {
-          id: 3,
-          title: '教务系统维护公告',
-          content: '系统将于3月15日 02:00-06:00进行升级维护，届时暂停服务...',
-          priority: 'normal',
-          date: '2025-02-25'
-        },
-        {
-          id: 4,
-          title: '关于规范课程考核方式的通知',
-          content: '为进一步规范教学管理，现对课程考核方式提出以下要求...',
-          priority: 'normal',
-          date: '2025-02-20'
-        }
-      ]
+      todoList: [],
+      announcements: []
     };
+  },
+  mounted() {
+    this.loadDashboardData();
+    // 监听数据变化事件，自动刷新统计数据
+    eventBus.on('data-changed', this.handleDataChanged);
+  },
+  beforeUnmount() {
+    // 组件销毁时移除事件监听，防止内存泄漏
+    eventBus.off('data-changed', this.handleDataChanged);
   },
   computed: {
     currentDate() {
@@ -405,9 +350,52 @@ export default {
       };
       return colorMap[priority] || 'default';
     },
+    async loadDashboardData() {
+      this.loading = true;
+      try {
+        // 加载统计数据
+        const statsRes = await statisticsApi.getOverview();
+        if (statsRes.data.success) {
+          this.stats = {
+            ...statsRes.data.data,
+            pendingItems: 0
+          };
+        }
+        
+        // 加载待办事项（最多5条）
+        const todoRes = await todoApi.getTodos({ page: 0, size: 5 });
+        if (todoRes.data.success) {
+          this.todoList = todoRes.data.data.map(item => ({
+            id: item.id,
+            title: item.title,
+            description: item.description || '',
+            status: item.completed ? 'completed' : 'processing',
+            priority: item.priority || 'low',
+            priorityText: item.priority === 'high' ? '紧急' : item.priority === 'medium' ? '重要' : '普通'
+          }));
+          this.stats.pendingItems = todoRes.data.data.filter(t => !t.completed).length;
+        }
+        
+        // 加载系统公告（最多4条）
+        const noticeRes = await systemNoticeApi.getNotices({ page: 0, size: 4 });
+        if (noticeRes.data.success) {
+          this.announcements = noticeRes.data.data.map(item => ({
+            id: item.id,
+            title: item.title,
+            content: item.content || '',
+            priority: item.priority || 'normal',
+            date: item.publishDate || item.createTime
+          }));
+        }
+      } catch (error) {
+        console.error('加载仪表盘数据失败:', error);
+        this.$message.error('加载数据失败');
+      } finally {
+        this.loading = false;
+      }
+    },
     refreshData() {
-      this.$message.success('数据已刷新');
-      // 这里可以调用API重新获取数据
+      this.loadDashboardData();
     },
     handleTodo(item) {
       this.$message.info(`处理待办事项：${item.title}`);
@@ -430,6 +418,33 @@ export default {
     },
     navigateTo(key) {
       this.$emit('navigate', key);
+    },
+    /**
+     * 处理数据变化事件
+     * @param {Object} data - 包含模块名称和操作类型
+     */
+    handleDataChanged({ module, action }) {
+      console.log(`Dashboard 收到数据变化通知: ${module} - ${action}`);
+      
+      // 根据变化的模块决定是否需要刷新
+      const shouldRefresh = [
+        'grade',           // 成绩相关
+        'todo',            // 待办事项
+        'notice',          // 系统公告
+        'student',         // 学生管理
+        'teacher',         // 教师管理
+        'competition',     // 竞赛
+        'project',         // 项目
+        'credit',          // 学分认定
+        'thesis'           // 毕业设计
+      ].includes(module);
+      
+      if (shouldRefresh) {
+        // 延迟500ms刷新，给后端时间处理数据
+        setTimeout(() => {
+          this.loadDashboardData();
+        }, 500);
+      }
     }
   }
 };

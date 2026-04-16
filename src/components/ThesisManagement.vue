@@ -102,6 +102,7 @@
 
 <script>
 import { PlusOutlined, DownloadOutlined, FileSearchOutlined, CalendarOutlined, ReadOutlined } from '@ant-design/icons-vue';
+import projectApi from '../api/project';
 
 export default {
   name: 'ThesisManagement',
@@ -201,39 +202,31 @@ export default {
     this.loadTheses();
   },
   methods: {
-    loadTheses() {
+    async loadTheses() {
       this.loading = true;
-      // 模拟数据
-      setTimeout(() => {
-        this.theses = [
-          {
-            id: 1,
-            index: 1,
-            academicYear: '2024-2025',
-            studentId: '2021001',
-            studentName: '张三',
-            title: '基于Spring Boot的教务管理系统设计与实现',
-            teacher: '张老师',
-            status: '中期检查',
-            score: null,
-            submitTime: '2025-01-10 14:30:00'
-          },
-          {
-            id: 2,
-            index: 2,
-            academicYear: '2024-2025',
-            studentId: '2021002',
-            studentName: '李四',
-            title: '深度学习在图像识别中的应用研究',
-            teacher: '李老师',
-            status: '开题阶段',
-            score: null,
-            submitTime: '2025-01-08 09:20:00'
-          }
-        ];
-        this.pagination.total = this.theses.length;
+      try {
+        const params = {
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize,
+          academicYear: this.filters.academicYear || undefined,
+          studentName: this.filters.studentName || undefined,
+          teacher: this.filters.teacher || undefined,
+          status: this.filters.status || undefined
+        };
+        const res = await projectApi.getAll(params.page, params.size);
+        if (res.data.success) {
+          this.theses = res.data.data.map((item, index) => ({
+            ...item,
+            index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
+          }));
+          this.pagination.total = res.data.total;
+        }
+      } catch (error) {
+        console.error('加载毕业设计数据失败:', error);
+        this.$message.error('加载毕业设计数据失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     getStatusColor(status) {
       const colorMap = {

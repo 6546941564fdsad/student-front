@@ -73,6 +73,7 @@
 
 <script>
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons-vue';
+import { dataDictionaryApi } from '@/api/dataDictionary';
 
 export default {
   name: 'DataDictionary',
@@ -160,48 +161,29 @@ export default {
     this.loadDictionaries();
   },
   methods: {
-    loadDictionaries() {
+    async loadDictionaries() {
       this.loading = true;
-      // 模拟数据
-      setTimeout(() => {
-        this.dictionaries = [
-          {
-            id: 1,
-            index: 1,
-            dictType: 'gender',
-            dictLabel: '男',
-            dictValue: '1',
-            sortOrder: 1,
-            status: true,
-            remark: '男性',
-            createTime: '2024-01-01 10:00:00'
-          },
-          {
-            id: 2,
-            index: 2,
-            dictType: 'gender',
-            dictLabel: '女',
-            dictValue: '2',
-            sortOrder: 2,
-            status: true,
-            remark: '女性',
-            createTime: '2024-01-01 10:00:00'
-          },
-          {
-            id: 3,
-            index: 3,
-            dictType: 'education_level',
-            dictLabel: '本科',
-            dictValue: 'undergraduate',
-            sortOrder: 1,
-            status: true,
-            remark: '本科学历',
-            createTime: '2024-01-01 10:00:00'
-          }
-        ];
-        this.pagination.total = this.dictionaries.length;
+      try {
+        const params = {
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize,
+          dictType: this.filters.dictType || undefined,
+          dictLabel: this.filters.dictLabel || undefined
+        };
+        const res = await dataDictionaryApi.getDictionaries(params);
+        if (res.data.success) {
+          this.dictionaries = res.data.data.map((item, index) => ({
+            ...item,
+            index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
+          }));
+          this.pagination.total = res.data.total;
+        }
+      } catch (error) {
+        console.error('加载数据字典失败:', error);
+        this.$message.error('加载数据失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     handleSearch() {
       this.pagination.current = 1;
@@ -223,9 +205,15 @@ export default {
     handleEdit(record) {
       this.$message.info(`编辑字典项：${record.dictLabel}`);
     },
-    handleDelete(record) {
-      this.$message.success(`已删除字典项：${record.dictLabel}`);
-      this.loadDictionaries();
+    async handleDelete(record) {
+      try {
+        await dataDictionaryApi.deleteDictionary(record.id);
+        this.$message.success(`已删除字典项：${record.dictLabel}`);
+        this.loadDictionaries();
+      } catch (error) {
+        console.error('删除失败:', error);
+        this.$message.error('删除失败');
+      }
     },
     handleTableChange(pagination) {
       this.pagination.current = pagination.current;

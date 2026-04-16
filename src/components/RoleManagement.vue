@@ -75,6 +75,7 @@
 
 <script>
 import { PlusOutlined } from '@ant-design/icons-vue';
+import { roleApi } from '@/api/role';
 
 export default {
   name: 'RoleManagement',
@@ -177,44 +178,23 @@ export default {
     this.loadRoles();
   },
   methods: {
-    loadRoles() {
+    async loadRoles() {
       this.loading = true;
-      // 模拟数据
-      setTimeout(() => {
-        this.roles = [
-          {
-            id: 1,
-            index: 1,
-            roleName: '超级管理员',
-            roleCode: 'SUPER_ADMIN',
-            description: '拥有系统所有权限',
-            permissions: ['全部权限'],
-            status: true,
-            createTime: '2024-01-01 10:00:00'
-          },
-          {
-            id: 2,
-            index: 2,
-            roleName: '教务管理员',
-            roleCode: 'ACADEMIC_ADMIN',
-            description: '负责教学管理相关功能',
-            permissions: ['学生管理', '课程管理', '成绩管理'],
-            status: true,
-            createTime: '2024-01-01 10:00:00'
-          },
-          {
-            id: 3,
-            index: 3,
-            roleName: '教师',
-            roleCode: 'TEACHER',
-            description: '教师角色，可查看和录入成绩',
-            permissions: ['成绩录入', '教学任务'],
-            status: true,
-            createTime: '2024-01-01 10:00:00'
-          }
-        ];
+      try {
+        const res = await roleApi.getRoles();
+        if (res.data.success) {
+          this.roles = res.data.data.map((item, index) => ({
+            ...item,
+            index: index + 1,
+            permissions: ['全部权限'] // 模拟权限显示，后续可扩展
+          }));
+        }
+      } catch (error) {
+        console.error('加载角色失败:', error);
+        this.$message.error('加载数据失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     handleAdd() {
       this.$message.info('新增角色功能开发中');
@@ -235,10 +215,16 @@ export default {
       const statusText = record.status ? '启用' : '禁用';
       this.$message.success(`角色 ${record.roleName} 已${statusText}`);
     },
-    handleDelete(record) {
-      this.$message.success(`已删除角色：${record.roleName}`);
-      this.loadRoles();
-    }
+    async handleDelete(record) {
+      try {
+        await roleApi.deleteRole(record.id);
+        this.$message.success(`已删除角色：${record.roleName}`);
+        this.loadRoles();
+      } catch (error) {
+        console.error('删除失败:', error);
+        this.$message.error('删除失败');
+      }
+    },
   }
 };
 </script>
