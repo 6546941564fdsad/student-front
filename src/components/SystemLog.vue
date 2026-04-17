@@ -206,6 +206,11 @@ export default {
           operationType: this.filters.operationType || undefined,
           status: this.filters.status || undefined
         };
+        // 添加时间范围参数
+        if (this.filters.dateRange && this.filters.dateRange.length === 2) {
+          params.startTime = this.filters.dateRange[0].format('YYYY-MM-DDTHH:mm:ss');
+          params.endTime = this.filters.dateRange[1].format('YYYY-MM-DDTHH:mm:ss');
+        }
         const res = await systemLogApi.getLogs(params);
         if (res.data.success) {
           this.logs = res.data.data.map((item, index) => ({

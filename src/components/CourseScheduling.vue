@@ -97,6 +97,7 @@
 
 <script>
 import { PlusOutlined, FormOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import courseSchedulingApi from '@/api/courseScheduling';
 
 export default {
   name: 'CourseScheduling',
@@ -108,55 +109,11 @@ export default {
   data() {
     return {
       loading: false,
-      courses: [
-        { id: 1, name: '数据结构', courseId: 'CS101' },
-        { id: 2, name: '操作系统', courseId: 'CS102' },
-        { id: 3, name: '软件工程', courseId: 'SE201' }
-      ],
-      teachers: [
-        { id: 1, name: '张老师' },
-        { id: 2, name: '李老师' },
-        { id: 3, name: '王老师' }
-      ],
-      classes: [
-        { id: 1, name: '计科1班' },
-        { id: 2, name: '计科2班' },
-        { id: 3, name: '软工1班' }
-      ],
-      classrooms: [
-        { id: 1, name: 'A101' },
-        { id: 2, name: 'A102' },
-        { id: 3, name: 'B201' },
-        { id: 4, name: 'B202' }
-      ],
-      schedulings: [
-        {
-          id: 1,
-          courseId: 1,
-          courseName: '数据结构',
-          teacherId: 1,
-          teacherName: '张老师',
-          classId: 1,
-          className: '计科1班',
-          weekday: '1',
-          period: '1-2',
-          classroomId: 1,
-          classroomName: 'A101'
-        },
-        {
-          id: 2,
-          courseId: 2,
-          courseName: '操作系统',
-          teacherId: 2,
-          teacherName: '李老师',
-          classId: 1,
-          className: '计科1班',
-          weekday: '2',
-          period: '3-4',
-          classroomId: 2,
-          classroomName: 'A102'
-        }
-      ],
+      courses: [],
+      teachers: [],
+      classes: [],
+      classrooms: [],
+      schedulings: [],
       schedulingForm: {
         courseId: '',
         teacherId: '',
@@ -199,7 +156,43 @@ export default {
       ]
     };
   },
+  mounted() {
+    this.loadDicts();
+    this.loadSchedules();
+  },
   methods: {
+    async loadDicts() {
+      // 模拟字典数据，实际应从后端获取
+      this.courses = [
+        { id: 1, name: '数据结构', courseId: 'CS101' },
+        { id: 2, name: '操作系统', courseId: 'CS102' }
+      ];
+      this.teachers = [
+        { id: 1, name: '张老师' },
+        { id: 2, name: '李老师' }
+      ];
+      this.classes = [
+        { id: 1, name: '计科1班' },
+        { id: 2, name: '计科2班' }
+      ];
+      this.classrooms = [
+        { id: 1, name: 'A101' },
+        { id: 2, name: 'A102' }
+      ];
+    },
+    async loadSchedules() {
+      this.loading = true;
+      try {
+        const res = await courseSchedulingApi.getSchedules();
+        if (res.data.success) {
+          this.schedulings = res.data.data;
+        }
+      } catch (error) {
+        console.error('加载排课失败:', error);
+      } finally {
+        this.loading = false;
+      }
+    },
     async saveScheduling() {
       this.loading = true;
       try {
@@ -215,43 +208,28 @@ export default {
         
         if (this.currentScheduling) {
           // 编辑排课
-          const index = this.schedulings.findIndex(s => s.id === this.currentScheduling.id);
-          if (index !== -1) {
-            this.schedulings[index] = {
-              ...this.schedulings[index],
-              courseId: this.schedulingForm.courseId,
-              courseName: course.name,
-              teacherId: this.schedulingForm.teacherId,
-              teacherName: teacher.name,
-              classId: this.schedulingForm.classId,
-              className: classItem.name,
-              weekday: this.schedulingForm.weekday,
-              period: this.schedulingForm.period,
-              classroomId: this.schedulingForm.classroomId,
-              classroomName: classroom.name
-            };
-          }
+          await courseSchedulingApi.updateSchedule(this.currentScheduling.id, {
+            ...this.schedulingForm,
+            courseName: course.name,
+            teacherName: teacher.name,
+            className: classItem.name,
+            classroomName: classroom.name
+          });
           this.$message.success('编辑排课成功');
         } else {
           // 添加排课
-          const newScheduling = {
-            id: this.schedulings.length + 1,
-            courseId: this.schedulingForm.courseId,
+          await courseSchedulingApi.addSchedule({
+            ...this.schedulingForm,
             courseName: course.name,
-            teacherId: this.schedulingForm.teacherId,
             teacherName: teacher.name,
-            classId: this.schedulingForm.classId,
             className: classItem.name,
-            weekday: this.schedulingForm.weekday,
-            period: this.schedulingForm.period,
-            classroomId: this.schedulingForm.classroomId,
             classroomName: classroom.name
-          };
-          this.schedulings.push(newScheduling);
+          });
           this.$message.success('添加排课成功');
         }
         
         this.resetForm();
+        this.loadSchedules();
       } catch (error) {
         console.error('保存排课失败:', error);
         this.$message.error('保存排课失败');
@@ -276,9 +254,14 @@ export default {
         content: '确定要删除这条排课记录吗？',
         okText: '确定',
         cancelText: '取消',
-        onOk: () => {
-          this.schedulings = this.schedulings.filter(s => s.id !== id);
-          this.$message.success('删除排课成功');
+        onOk: async () => {
+          try {
+            await courseSchedulingApi.deleteSchedule(id);
+            this.$message.success('删除排课成功');
+            this.loadSchedules();
+          } catch (error) {
+            this.$message.error('删除失败');
+          }
         }
       });
     },

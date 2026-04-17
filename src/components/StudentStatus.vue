@@ -12,6 +12,7 @@
             :columns="changeColumns"
             :data-source="statusChanges"
             :pagination="pagination"
+            :loading="loading"
           >
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'status'">
@@ -50,10 +51,41 @@
         </a-tab-pane>
       </a-tabs>
     </a-card>
+
+    <!-- 审批弹窗 -->
+    <a-modal
+      v-model:open="showAuditModal"
+      title="学籍异动审批"
+      @ok="handleAuditSubmit"
+    >
+      <a-form :model="auditForm" layout="vertical">
+        <a-form-item label="学号">
+          <a-input v-model:value="auditForm.studentNo" disabled />
+        </a-form-item>
+        <a-form-item label="姓名">
+          <a-input v-model:value="auditForm.name" disabled />
+        </a-form-item>
+        <a-form-item label="异动类型">
+          <a-input v-model:value="auditForm.changeType" disabled />
+        </a-form-item>
+        <a-form-item label="审批状态">
+          <a-select v-model:value="auditForm.status">
+            <a-select-option value="待审批">待审批</a-select-option>
+            <a-select-option value="已通过">已通过</a-select-option>
+            <a-select-option value="已拒绝">已拒绝</a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="审批意见">
+          <a-textarea v-model:value="auditForm.remark" :rows="3" placeholder="请输入审批意见" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
 <script>
+import studentStatusApi from '@/api/studentStatus';
+
 export default {
   name: 'StudentStatus',
   data() {
@@ -63,6 +95,7 @@ export default {
         studentNo: '',
         name: ''
       },
+      loading: false,
       pagination: {
         current: 1,
         pageSize: 10,
@@ -85,30 +118,14 @@ export default {
         { title: '班级', dataIndex: 'className', key: 'className' },
         { title: '学籍状态', dataIndex: 'status', key: 'status', width: 100 }
       ],
-      statusChanges: [
-        {
-          id: 1,
-          applyNo: 'YC20250001',
-          studentNo: '2024001001',
-          name: '张三',
-          changeType: '休学',
-          applyDate: '2025-03-01',
-          status: '待审批'
-        },
-        {
-          id: 2,
-          applyNo: 'YC20250002',
-          studentNo: '2024001002',
-          name: '李四',
-          changeType: '转专业',
-          applyDate: '2025-03-02',
-          status: '已通过'
-        }
-      ],
-      studentRecords: []
+      statusChanges: [],
+      studentRecords: [],
+      showAuditModal: false,
+      auditForm: {}
     };
   },
   mounted() {
+    this.loadStatusChanges();
     this.loadStudentRecords();
   },
   methods: {
@@ -120,27 +137,50 @@ export default {
       };
       return colorMap[status] || 'default';
     },
-    loadStudentRecords() {
-      this.studentRecords = [
-        {
-          studentNo: '2024001001',
-          name: '张三',
-          college: '大数据与计算机学院',
-          major: '计算机科学与技术',
-          className: '计科2401班',
-          status: '在读'
+    async loadStatusChanges() {
+      this.loading = true;
+      try {
+        const res = await studentStatusApi.getChanges({
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize
+        });
+        if (res.data.success) {
+          this.statusChanges = res.data.data.map(item => ({
+            ...item,
+            applyNo: `YC${new Date(item.applyDate).getFullYear()}${String(item.id).padStart(4, '0')}`
+          }));
+          this.pagination.total = res.data.total;
         }
-      ];
-      this.pagination.total = this.studentRecords.length;
+      } catch (error) {
+        console.error('加载数据失败:', error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    loadStudentRecords() {
+      // TODO: 对接学生查询API
+      this.studentRecords = [];
+      this.pagination.total = 0;
     },
     handleSearch() {
       this.loadStudentRecords();
     },
     approve(record) {
-      this.$message.info(`审批学籍异动：${record.applyNo}`);
+      this.auditForm = { ...record };
+      this.showAuditModal = true;
     },
     viewDetail(record) {
       this.$message.info(`查看详情：${record.applyNo}`);
+    },
+    async handleAuditSubmit() {
+      try {
+        await studentStatusApi.updateChange(this.auditForm.id, this.auditForm);
+        this.$message.success('审批成功');
+        this.showAuditModal = false;
+        this.loadStatusChanges();
+      } catch (error) {
+        this.$message.error('审批失败');
+      }
     }
   }
 };

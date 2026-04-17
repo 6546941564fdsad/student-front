@@ -65,11 +65,15 @@
           </a-button>
         </a-form-item>
         
+        <div class="register-link">
+          <span>还没有账号？</span>
+          <a @click="showRegisterModal">立即注册</a>
+        </div>
+        
         <a-alert
           v-if="error"
           type="error"
-          message="登录失败"
-          description="{{ error }}"
+          :message="error"
           show-icon
           class="error-message"
         />
@@ -79,6 +83,97 @@
         </div>
       </a-form>
     </div>
+
+    <!-- 注册弹窗 -->
+    <a-modal
+      v-model:open="registerVisible"
+      title="用户注册"
+      width="600px"
+      :confirm-loading="registerLoading"
+      @ok="handleRegister"
+    >
+      <a-alert
+        message="注册须知"
+        description="新注册用户需要管理员审核后才能登录。学生请使用学号注册，教师请使用工号注册。"
+        type="info"
+        show-icon
+        style="margin-bottom: 16px;"
+      />
+      
+      <a-form :model="registerForm" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
+        <!-- 身份选择 -->
+        <a-form-item label="注册身份" required>
+          <a-radio-group v-model:value="registerForm.role" @change="handleRoleChange">
+            <a-radio value="STUDENT">学生</a-radio>
+            <a-radio value="TEACHER">教师</a-radio>
+          </a-radio-group>
+        </a-form-item>
+
+        <!-- 基本信息 -->
+        <a-form-item label="用户名" required>
+          <a-input v-model:value="registerForm.username" placeholder="请输入用户名（用于登录）" />
+        </a-form-item>
+        <a-form-item label="密码" required>
+          <a-input-password v-model:value="registerForm.password" placeholder="请输入密码（至少6位）" />
+        </a-form-item>
+        <a-form-item label="确认密码" required>
+          <a-input-password v-model:value="registerForm.confirmPassword" placeholder="请再次输入密码" />
+        </a-form-item>
+        <a-form-item label="真实姓名" required>
+          <a-input v-model:value="registerForm.name" placeholder="请输入真实姓名" />
+        </a-form-item>
+
+        <!-- 学生专属字段 -->
+        <template v-if="registerForm.role === 'STUDENT'">
+          <a-form-item label="学号" required>
+            <a-input v-model:value="registerForm.studentNo" placeholder="请输入学号" />
+          </a-form-item>
+          <a-form-item label="所属学院">
+            <a-input v-model:value="registerForm.department" placeholder="请输入所属学院" />
+          </a-form-item>
+          <a-form-item label="专业">
+            <a-input v-model:value="registerForm.major" placeholder="请输入专业" />
+          </a-form-item>
+          <a-form-item label="班级">
+            <a-input v-model:value="registerForm.className" placeholder="请输入班级" />
+          </a-form-item>
+        </template>
+
+        <!-- 教师专属字段 -->
+        <template v-if="registerForm.role === 'TEACHER'">
+          <a-form-item label="工号" required>
+            <a-input v-model:value="registerForm.studentNo" placeholder="请输入工号" />
+          </a-form-item>
+          <a-form-item label="所属学院">
+            <a-input v-model:value="registerForm.department" placeholder="请输入所属学院" />
+          </a-form-item>
+          <a-form-item label="职称">
+            <a-input v-model:value="registerForm.title" placeholder="请输入职称（如：教授、副教授）" />
+          </a-form-item>
+        </template>
+
+        <!-- 联系信息 -->
+        <a-form-item label="邮箱">
+          <a-input v-model:value="registerForm.email" type="email" placeholder="请输入邮箱" />
+        </a-form-item>
+        <a-form-item label="手机号">
+          <a-input v-model:value="registerForm.phone" placeholder="请输入手机号" />
+        </a-form-item>
+      </a-form>
+
+      <template #footer>
+        <a-button @click="registerVisible = false">取消</a-button>
+        <a-button type="primary" :loading="registerLoading" @click="handleRegister">
+          提交注册
+        </a-button>
+      </template>
+      
+      <div style="margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 4px; font-size: 13px; color: #666;">
+        <div style="font-weight: bold; margin-bottom: 8px;">📋 权限说明：</div>
+        <div><strong>学生权限：</strong>查看个人档案、选课、成绩查询、考勤查看、考试安排、实习申请、毕业设计开题、教学评教</div>
+        <div style="margin-top: 4px;"><strong>教师权限：</strong>查看学生档案、教学任务、教学评价、成绩录入与分析、考勤管理、毕业设计指导、课程变更申请</div>
+      </div>
+    </a-modal>
   </div>
 </template>
 
@@ -99,7 +194,24 @@ export default {
         password: ''
       },
       error: '',
-      loading: false
+      loading: false,
+      // 注册相关
+      registerVisible: false,
+      registerLoading: false,
+      registerForm: {
+        username: '',
+        password: '',
+        confirmPassword: '',
+        role: 'STUDENT',
+        name: '',
+        email: '',
+        phone: '',
+        studentNo: '',
+        department: '',
+        major: '',
+        className: '',
+        title: ''
+      }
     };
   },
   methods: {
@@ -129,9 +241,104 @@ export default {
       } catch (error) {
         console.error('登录失败:', error);
         console.error('错误详情:', error.response?.data);
-        this.error = error.response?.data?.message || '登录失败，请检查网络连接或后端服务是否启动';
+        
+        // 根据状态码显示不同的错误信息
+        if (error.response?.status === 403) {
+          // 403 表示账号被禁用或待审核
+          this.error = error.response?.data?.message || '您的账号暂时无法登录，请联系管理员';
+        } else if (error.response?.status === 401) {
+          // 401 表示用户名或密码错误
+          this.error = error.response?.data?.message || '用户名或密码错误';
+        } else {
+          this.error = error.response?.data?.message || '登录失败，请检查网络连接或后端服务是否启动';
+        }
       } finally {
         this.loading = false;
+      }
+    },
+    // 显示注册弹窗
+    showRegisterModal() {
+      this.registerVisible = true;
+      this.resetRegisterForm();
+    },
+    // 重置注册表单
+    resetRegisterForm() {
+      this.registerForm = {
+        username: '',
+        password: '',
+        confirmPassword: '',
+        role: 'STUDENT',
+        name: '',
+        email: '',
+        phone: '',
+        studentNo: '',
+        department: '',
+        major: '',
+        className: '',
+        title: ''
+      };
+    },
+    // 切换身份时清空专属字段
+    handleRoleChange() {
+      this.registerForm.studentNo = '';
+      this.registerForm.department = '';
+      this.registerForm.major = '';
+      this.registerForm.className = '';
+      this.registerForm.title = '';
+    },
+    // 提交注册
+    async handleRegister() {
+      // 表单验证
+      if (!this.registerForm.username || !this.registerForm.password || !this.registerForm.name) {
+        this.$message.warning('请填写必填项');
+        return;
+      }
+      if (this.registerForm.password.length < 6) {
+        this.$message.warning('密码长度至少为6位');
+        return;
+      }
+      if (this.registerForm.password !== this.registerForm.confirmPassword) {
+        this.$message.warning('两次输入的密码不一致');
+        return;
+      }
+      if (this.registerForm.role === 'STUDENT' && !this.registerForm.studentNo) {
+        this.$message.warning('请输入学号');
+        return;
+      }
+      if (this.registerForm.role === 'TEACHER' && !this.registerForm.studentNo) {
+        this.$message.warning('请输入工号');
+        return;
+      }
+
+      this.registerLoading = true;
+      try {
+        const registerData = {
+          username: this.registerForm.username,
+          password: this.registerForm.password,
+          role: this.registerForm.role,
+          name: this.registerForm.name,
+          email: this.registerForm.email,
+          phone: this.registerForm.phone,
+          studentNo: this.registerForm.studentNo,
+          department: this.registerForm.department,
+          major: this.registerForm.role === 'STUDENT' ? this.registerForm.major : undefined,
+          className: this.registerForm.role === 'STUDENT' ? this.registerForm.className : undefined,
+          title: this.registerForm.role === 'TEACHER' ? this.registerForm.title : undefined
+        };
+
+        const response = await authApi.register(registerData);
+        if (response.data.success) {
+          this.$message.success('注册成功，请等待管理员审核');
+          this.registerVisible = false;
+          this.resetRegisterForm();
+        } else {
+          this.$message.error(response.data.message || '注册失败');
+        }
+      } catch (error) {
+        console.error('注册失败:', error);
+        this.$message.error(error.response?.data?.message || '注册失败，请稍后重试');
+      } finally {
+        this.registerLoading = false;
       }
     }
   }

@@ -9,6 +9,9 @@ export const dataDictionaryApi = {
   addDictionary(dictionary) {
     return axios.post(API_BASE_URL, dictionary);
   },
+  updateDictionary(id, dictionary) {
+    return axios.put(`${API_BASE_URL}/${id}`, dictionary);
+  },
   deleteDictionary(id) {
     return axios.delete(`${API_BASE_URL}/${id}`);
   }

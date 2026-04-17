@@ -65,17 +65,18 @@ export const ROLE_PERMISSIONS = {
     'competition-management', 'credit-recognition'
   ],
   
-  // 学生 - 只能查看个人信息、选课、成绩查询等
+  // 学生 - 个人中心模式，只能查看和管理自己的数据
   STUDENT: [
-    'data-stats',
-    'student-archives',  // 查看个人档案
-    'course-selection',  // 选课
-    'grade-analysis',    // 查看成绩
-    'attendance-management',  // 查看考勤
-    'exam-arrangement',  // 查看考试安排
-    'internship-management',  // 实习申请
-    'thesis-proposal',   // 毕业设计开题
-    'teaching-evaluation'  // 教学评教
+    'my-profile',        // 个人信息
+    'my-courses',        // 我的课程（选课、课表）
+    'my-grades',         // 我的成绩
+    'my-attendance',     // 我的考勤
+    'my-exams',          // 考试安排
+    'my-thesis',         // 毕业设计
+    'my-evaluation',     // 教学评价
+    'my-internship',     // 实习申请
+    'my-warning',        // 学业预警
+    'system-notice'      // 系统公告
   ]
 };
 

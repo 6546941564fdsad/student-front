@@ -29,7 +29,7 @@
 
       <!-- 操作按钮 -->
       <div class="action-bar">
-        <a-button type="primary" @click="handleAssign">
+        <a-button type="primary" @click="handleAdd">
           <template #icon><PlusOutlined /></template>
           分配任务
         </a-button>
@@ -70,6 +70,62 @@
         </template>
       </a-table>
     </a-card>
+
+    <!-- 编辑弹窗 -->
+    <a-modal
+      v-model:open="showEditModal"
+      title="编辑教学任务"
+      @ok="handleEditSubmit"
+      :confirm-loading="editLoading"
+    >
+      <a-form :model="editForm" layout="vertical">
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="学期">
+              <a-input v-model:value="editForm.semester" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="课程名称">
+              <a-input v-model:value="editForm.courseName" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="授课教师">
+              <a-input v-model:value="editForm.teacher" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="班级">
+              <a-input v-model:value="editForm.className" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="16">
+          <a-col :span="8">
+            <a-form-item label="学时">
+              <a-input-number v-model:value="editForm.hours" style="width: 100%" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="8">
+            <a-form-item label="学分">
+              <a-input-number v-model:value="editForm.credits" :step="0.5" style="width: 100%" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="8">
+            <a-form-item label="状态">
+              <a-select v-model:value="editForm.status">
+                <a-select-option value="未开始">未开始</a-select-option>
+                <a-select-option value="进行中">进行中</a-select-option>
+                <a-select-option value="已完成">已完成</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+        </a-row>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
@@ -153,6 +209,9 @@ export default {
       ],
       tasks: [],
       loading: false,
+      editLoading: false,
+      showEditModal: false,
+      editForm: {},
       pagination: {
         current: 1,
         pageSize: 10,
@@ -211,8 +270,17 @@ export default {
       };
       this.handleSearch();
     },
-    handleAssign() {
-      this.$message.info('分配教学任务功能开发中');
+    handleAdd() {
+      this.editForm = {
+        semester: '2024-2025学年第一学期',
+        courseName: '',
+        teacher: '',
+        className: '',
+        hours: 32,
+        credits: 2,
+        status: '未开始'
+      };
+      this.showEditModal = true;
     },
     handleExport() {
       this.$message.success('导出成功');
@@ -221,7 +289,22 @@ export default {
       this.$message.info(`查看教学任务：${record.courseName}`);
     },
     handleEdit(record) {
-      this.$message.info(`编辑教学任务：${record.courseName}`);
+      this.editForm = { ...record };
+      this.showEditModal = true;
+    },
+    async handleEditSubmit() {
+      this.editLoading = true;
+      try {
+        await teachingTaskApi.updateTask(this.editForm.id, this.editForm);
+        this.$message.success('更新成功');
+        this.showEditModal = false;
+        this.loadTasks();
+      } catch (error) {
+        console.error('更新失败:', error);
+        this.$message.error('更新失败');
+      } finally {
+        this.editLoading = false;
+      }
     },
     async handleDelete(record) {
       try {

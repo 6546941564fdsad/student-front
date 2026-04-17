@@ -52,7 +52,7 @@
 </template>
 
 <script>
-import { studentApi } from '../api/student';
+import studentApi from '../api/student';
 
 export default {
   name: 'StudentStatistics',

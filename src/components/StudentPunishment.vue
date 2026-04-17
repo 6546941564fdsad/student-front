@@ -8,7 +8,7 @@
 
       <a-tabs v-model:activeKey="activeTab">
         <a-tab-pane key="reward" tab="奖励管理">
-          <a-table :columns="columns" :data-source="rewards" :pagination="pagination">
+          <a-table :columns="columns" :data-source="records" :pagination="pagination" :loading="loading">
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'action'">
                 <a-space>
@@ -21,7 +21,7 @@
         </a-tab-pane>
 
         <a-tab-pane key="punishment" tab="处分管理">
-          <a-table :columns="columns" :data-source="punishments" :pagination="pagination">
+          <a-table :columns="columns" :data-source="records" :pagination="pagination" :loading="loading">
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'action'">
                 <a-space>
@@ -34,15 +34,46 @@
         </a-tab-pane>
       </a-tabs>
     </a-card>
+
+    <!-- 编辑弹窗 -->
+    <a-modal
+      v-model:open="showEditModal"
+      :title="editForm.id ? '编辑记录' : '新增记录'"
+      @ok="handleEditSubmit"
+    >
+      <a-form :model="editForm" layout="vertical">
+        <a-form-item label="学号">
+          <a-input v-model:value="editForm.studentNo" />
+        </a-form-item>
+        <a-form-item label="姓名">
+          <a-input v-model:value="editForm.name" />
+        </a-form-item>
+        <a-form-item label="类型">
+          <a-select v-model:value="editForm.type">
+            <a-select-option value="奖励">奖励</a-select-option>
+            <a-select-option value="处分">处分</a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="日期">
+          <a-date-picker v-model:value="editForm.date" style="width: 100%" />
+        </a-form-item>
+        <a-form-item label="原因">
+          <a-textarea v-model:value="editForm.reason" :rows="3" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
 <script>
+import punishmentApi from '@/api/punishment';
+
 export default {
   name: 'StudentPunishment',
   data() {
     return {
       activeTab: 'reward',
+      loading: false,
       pagination: { current: 1, pageSize: 10, total: 0 },
       columns: [
         { title: '学号', dataIndex: 'studentNo', key: 'studentNo', width: 120 },
@@ -52,17 +83,54 @@ export default {
         { title: '原因', dataIndex: 'reason', key: 'reason' },
         { title: '操作', key: 'action', width: 150 }
       ],
-      rewards: [
-        { id: 1, studentNo: '2024001001', name: '张三', type: '奖学金', date: '2024-10-01', reason: '优秀学习成绩' }
-      ],
-      punishments: [
-        { id: 2, studentNo: '2024001002', name: '李四', type: '警告', date: '2024-11-15', reason: '违反课堂纪律' }
-      ]
+      records: [],
+      showEditModal: false,
+      editForm: {}
     };
   },
+  mounted() {
+    this.loadRecords();
+  },
   methods: {
-    view(record) { this.$message.info(`查看详情：${record.name}`); },
-    edit(record) { this.$message.info(`编辑：${record.name}`); }
+    async loadRecords() {
+      this.loading = true;
+      try {
+        const res = await punishmentApi.getPunishments({
+          page: this.pagination.current - 1,
+          size: this.pagination.pageSize,
+          type: this.activeTab === 'reward' ? '奖励' : '处分'
+        });
+        if (res.data.success) {
+          this.records = res.data.data;
+          this.pagination.total = res.data.total;
+        }
+      } catch (error) {
+        console.error('加载数据失败:', error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    view(record) {
+      this.$message.info(`查看详情：${record.name}`);
+    },
+    edit(record) {
+      this.editForm = { ...record };
+      this.showEditModal = true;
+    },
+    async handleEditSubmit() {
+      try {
+        if (this.editForm.id) {
+          await punishmentApi.updatePunishment(this.editForm.id, this.editForm);
+        } else {
+          await punishmentApi.addPunishment(this.editForm);
+        }
+        this.$message.success('保存成功');
+        this.showEditModal = false;
+        this.loadRecords();
+      } catch (error) {
+        this.$message.error('保存失败');
+      }
+    }
   }
 };
 </script>

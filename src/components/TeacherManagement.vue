@@ -82,6 +82,67 @@
         </template>
       </a-table>
     </a-card>
+
+    <!-- 新增/编辑弹窗 -->
+    <a-modal
+      v-model:open="showEditModal"
+      :title="editForm.id ? '编辑教师' : '新增教师'"
+      @ok="handleEditSubmit"
+      :confirm-loading="editLoading"
+    >
+      <a-form :model="editForm" layout="vertical">
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="姓名" required>
+              <a-input v-model:value="editForm.name" placeholder="请输入姓名" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="工号" required>
+              <a-input v-model:value="editForm.employeeId" placeholder="请输入工号" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="性别">
+              <a-select v-model:value="editForm.gender">
+                <a-select-option value="男">男</a-select-option>
+                <a-select-option value="女">女</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="所属学院">
+              <a-input v-model:value="editForm.department" placeholder="请输入所属学院" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="职称">
+              <a-select v-model:value="editForm.title">
+                <a-select-option value="教授">教授</a-select-option>
+                <a-select-option value="副教授">副教授</a-select-option>
+                <a-select-option value="讲师">讲师</a-select-option>
+                <a-select-option value="助教">助教</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="联系电话">
+              <a-input v-model:value="editForm.phone" placeholder="请输入联系电话" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-form-item label="状态">
+          <a-select v-model:value="editForm.status">
+            <a-select-option value="在职">在职</a-select-option>
+            <a-select-option value="离职">离职</a-select-option>
+          </a-select>
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
@@ -165,6 +226,9 @@ export default {
       ],
       teachers: [],
       loading: false,
+      editLoading: false,
+      showEditModal: false,
+      editForm: {},
       pagination: {
         current: 1,
         pageSize: 10,
@@ -218,20 +282,47 @@ export default {
       this.handleSearch();
     },
     handleAdd() {
-      this.$message.info('新增教师功能开发中');
-    },
-    handleExport() {
-      this.$message.success('导出成功');
-    },
-    handleView(record) {
-      this.$message.info(`查看教师：${record.name}`);
+      this.editForm = {
+        name: '',
+        employeeId: '',
+        gender: '男',
+        department: '',
+        title: '',
+        phone: '',
+        status: '在职'
+      };
+      this.showEditModal = true;
     },
     handleEdit(record) {
-      this.$message.info(`编辑教师：${record.name}`);
+      this.editForm = { ...record };
+      this.showEditModal = true;
     },
-    handleDelete(record) {
-      this.$message.success(`已删除教师：${record.name}`);
-      this.loadTeachers();
+    async handleEditSubmit() {
+      this.editLoading = true;
+      try {
+        if (this.editForm.id) {
+          await teacherApi.updateTeacher(this.editForm.id, this.editForm);
+        } else {
+          await teacherApi.addTeacher(this.editForm);
+        }
+        this.$message.success('保存成功');
+        this.showEditModal = false;
+        this.loadTeachers();
+      } catch (error) {
+        console.error('保存失败:', error);
+        this.$message.error('保存失败');
+      } finally {
+        this.editLoading = false;
+      }
+    },
+    async handleDelete(record) {
+      try {
+        await teacherApi.deleteTeacher(record.id);
+        this.$message.success('删除成功');
+        this.loadTeachers();
+      } catch (error) {
+        this.$message.error('删除失败');
+      }
     },
     handleTableChange(pagination) {
       this.pagination.current = pagination.current;

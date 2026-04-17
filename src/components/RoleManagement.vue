@@ -70,6 +70,29 @@
         :default-expand-all="true"
       />
     </a-modal>
+
+    <!-- 新增/编辑角色弹窗 -->
+    <a-modal
+      v-model:open="showEditModal"
+      :title="editForm.id ? '编辑角色' : '新增角色'"
+      :confirm-loading="editLoading"
+      @ok="handleEditSubmit"
+    >
+      <a-form :model="editForm" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
+        <a-form-item label="角色名称" required>
+          <a-input v-model:value="editForm.roleName" placeholder="请输入角色名称" />
+        </a-form-item>
+        <a-form-item label="角色编码" required>
+          <a-input v-model:value="editForm.roleCode" placeholder="请输入角色编码" />
+        </a-form-item>
+        <a-form-item label="角色描述">
+          <a-textarea v-model:value="editForm.description" placeholder="请输入角色描述" :rows="3" />
+        </a-form-item>
+        <a-form-item label="状态">
+          <a-switch v-model:checked="editForm.status" checked-children="启用" un-checked-children="禁用" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
@@ -141,6 +164,15 @@ export default {
       permissionModalVisible: false,
       currentRoleId: null,
       checkedKeys: [],
+      showEditModal: false,
+      editLoading: false,
+      editForm: {
+        id: null,
+        roleName: '',
+        roleCode: '',
+        description: '',
+        status: true
+      },
       permissionTree: [
         {
           title: '系统概览',
@@ -170,6 +202,16 @@ export default {
             { title: '教学计划', key: 'teaching-plan' },
             { title: '课程排课', key: 'course-scheduling' }
           ]
+        },
+        {
+          title: '系统设置',
+          key: 'system-settings',
+          children: [
+            { title: '用户管理', key: 'user-mgmt' },
+            { title: '角色权限', key: 'role-permission' },
+            { title: '数据字典', key: 'data-dictionary' },
+            { title: '系统日志', key: 'system-log' }
+          ]
         }
       ]
     };
@@ -197,23 +239,62 @@ export default {
       }
     },
     handleAdd() {
-      this.$message.info('新增角色功能开发中');
+      this.editForm = {
+        id: null,
+        roleName: '',
+        roleCode: '',
+        description: '',
+        status: true
+      };
+      this.showEditModal = true;
     },
     handleEdit(record) {
-      this.$message.info(`编辑角色：${record.roleName}`);
+      this.editForm = { ...record };
+      this.showEditModal = true;
+    },
+    async handleEditSubmit() {
+      this.editLoading = true;
+      try {
+        if (this.editForm.id) {
+          await roleApi.updateRole(this.editForm.id, this.editForm);
+          this.$message.success('更新成功');
+        } else {
+          await roleApi.addRole(this.editForm);
+          this.$message.success('新增成功');
+        }
+        this.showEditModal = false;
+        this.loadRoles();
+      } catch (error) {
+        console.error('保存失败:', error);
+        this.$message.error('保存失败');
+      } finally {
+        this.editLoading = false;
+      }
     },
     handlePermission(record) {
       this.currentRoleId = record.id;
       this.permissionModalVisible = true;
       this.checkedKeys = []; // 加载该角色的权限
     },
-    handlePermissionSave() {
-      this.$message.success('权限配置保存成功');
-      this.permissionModalVisible = false;
+    async handlePermissionSave() {
+      try {
+        // TODO: 调用后端接口保存权限配置
+        this.$message.success('权限配置保存成功');
+        this.permissionModalVisible = false;
+      } catch (error) {
+        this.$message.error('保存失败');
+      }
     },
-    handleStatusChange(record) {
-      const statusText = record.status ? '启用' : '禁用';
-      this.$message.success(`角色 ${record.roleName} 已${statusText}`);
+    async handleStatusChange(record) {
+      try {
+        await roleApi.updateRole(record.id, record);
+        const statusText = record.status ? '启用' : '禁用';
+        this.$message.success(`角色 ${record.roleName} 已${statusText}`);
+      } catch (error) {
+        this.$message.error('状态更新失败');
+        // 回滚状态
+        record.status = !record.status;
+      }
     },
     async handleDelete(record) {
       try {

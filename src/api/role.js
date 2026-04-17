@@ -9,6 +9,9 @@ export const roleApi = {
   addRole(role) {
     return axios.post(API_BASE_URL, role);
   },
+  updateRole(id, role) {
+    return axios.put(`${API_BASE_URL}/${id}`, role);
+  },
   deleteRole(id) {
     return axios.delete(`${API_BASE_URL}/${id}`);
   }

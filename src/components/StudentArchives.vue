@@ -59,23 +59,78 @@
       width="800px"
     >
       <a-descriptions bordered :column="2" v-if="currentStudent">
-        <a-descriptions-item label="学号">{{ currentStudent.studentNo }}</a-descriptions-item>
+        <a-descriptions-item label="学号">{{ currentStudent.studentId }}</a-descriptions-item>
         <a-descriptions-item label="姓名">{{ currentStudent.name }}</a-descriptions-item>
         <a-descriptions-item label="性别">{{ currentStudent.gender }}</a-descriptions-item>
-        <a-descriptions-item label="出生日期">{{ currentStudent.birthDate }}</a-descriptions-item>
+        <a-descriptions-item label="年龄">{{ currentStudent.age }}</a-descriptions-item>
         <a-descriptions-item label="学院">{{ currentStudent.college }}</a-descriptions-item>
         <a-descriptions-item label="专业">{{ currentStudent.major }}</a-descriptions-item>
         <a-descriptions-item label="班级">{{ currentStudent.className }}</a-descriptions-item>
-        <a-descriptions-item label="入学年份">{{ currentStudent.enrollYear }}</a-descriptions-item>
-        <a-descriptions-item label="联系电话" :span="2">{{ currentStudent.phone }}</a-descriptions-item>
-        <a-descriptions-item label="邮箱" :span="2">{{ currentStudent.email }}</a-descriptions-item>
+        <a-descriptions-item label="年级">{{ currentStudent.grade }}</a-descriptions-item>
+        <a-descriptions-item label="联系电话">{{ currentStudent.phone }}</a-descriptions-item>
+        <a-descriptions-item label="邮箱">{{ currentStudent.email }}</a-descriptions-item>
+        <a-descriptions-item label="状态">{{ currentStudent.status }}</a-descriptions-item>
+        <a-descriptions-item label="入学日期">{{ currentStudent.enrollmentDate }}</a-descriptions-item>
       </a-descriptions>
+    </a-modal>
+
+    <!-- 编辑学生弹窗 -->
+    <a-modal
+      title="编辑学生信息"
+      :open="showEditModal"
+      @ok="handleEditSubmit"
+      @cancel="showEditModal = false"
+      :confirmLoading="editLoading"
+      width="600px"
+    >
+      <a-form :model="editForm" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
+        <a-form-item label="学号">
+          <a-input v-model:value="editForm.studentId" disabled />
+        </a-form-item>
+        <a-form-item label="姓名" required>
+          <a-input v-model:value="editForm.name" />
+        </a-form-item>
+        <a-form-item label="性别" required>
+          <a-select v-model:value="editForm.gender">
+            <a-select-option value="男">男</a-select-option>
+            <a-select-option value="女">女</a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="年龄">
+          <a-input-number v-model:value="editForm.age" :min="16" :max="60" />
+        </a-form-item>
+        <a-form-item label="学院">
+          <a-input v-model:value="editForm.college" />
+        </a-form-item>
+        <a-form-item label="专业">
+          <a-input v-model:value="editForm.major" />
+        </a-form-item>
+        <a-form-item label="班级">
+          <a-input v-model:value="editForm.className" />
+        </a-form-item>
+        <a-form-item label="年级">
+          <a-input v-model:value="editForm.grade" />
+        </a-form-item>
+        <a-form-item label="电话">
+          <a-input v-model:value="editForm.phone" />
+        </a-form-item>
+        <a-form-item label="邮箱">
+          <a-input v-model:value="editForm.email" />
+        </a-form-item>
+        <a-form-item label="状态">
+          <a-select v-model:value="editForm.status">
+            <a-select-option value="在读">在读</a-select-option>
+            <a-select-option value="休学">休学</a-select-option>
+            <a-select-option value="毕业">毕业</a-select-option>
+          </a-select>
+        </a-form-item>
+      </a-form>
     </a-modal>
   </div>
 </template>
 
 <script>
-import { studentApi } from '@/api/student';
+import studentApi from '@/api/student';
 
 export default {
   name: 'StudentArchives',
@@ -89,7 +144,10 @@ export default {
       },
       loading: false,
       showDetail: false,
+      showEditModal: false,
+      editLoading: false,
       currentStudent: null,
+      editForm: {},
       pagination: {
         current: 1,
         pageSize: 10,
@@ -171,7 +229,36 @@ export default {
       this.showDetail = true;
     },
     editStudent(student) {
-      this.$message.info(`编辑学生：${student.name}`);
+      this.currentStudent = student;
+      this.editForm = {
+        id: student.id,
+        studentId: student.studentId,
+        name: student.name,
+        gender: student.gender,
+        age: student.age,
+        college: student.college,
+        major: student.major,
+        className: student.className,
+        grade: student.grade,
+        phone: student.phone,
+        email: student.email,
+        status: student.status
+      };
+      this.showEditModal = true;
+    },
+    async handleEditSubmit() {
+      this.editLoading = true;
+      try {
+        await studentApi.updateStudent(this.editForm.id, this.editForm);
+        this.$message.success('学生信息更新成功');
+        this.showEditModal = false;
+        this.loadStudents();
+      } catch (error) {
+        console.error('更新学生信息失败:', error);
+        this.$message.error('更新失败: ' + (error.response?.data?.message || error.message));
+      } finally {
+        this.editLoading = false;
+      }
     },
     async deleteStudent(student) {
       this.$confirm({
