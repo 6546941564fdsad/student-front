@@ -36,6 +36,7 @@
         :data-source="courses"
         :pagination="pagination"
         :loading="loading"
+        @change="handleTableChange"
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'action'">
@@ -48,6 +49,61 @@
         </template>
       </a-table>
     </a-card>
+
+    <!-- 新增/编辑弹窗 -->
+    <a-modal
+      v-model:open="showEditModal"
+      :title="editForm.id ? '编辑课程' : '新增课程'"
+      @ok="handleEditSubmit"
+      :confirm-loading="editLoading"
+    >
+      <a-form :model="editForm" layout="vertical">
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="课程编号" required>
+              <a-input v-model:value="editForm.courseCode" placeholder="请输入课程编号" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="课程名称" required>
+              <a-input v-model:value="editForm.courseName" placeholder="请输入课程名称" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="课程类别">
+              <a-select v-model:value="editForm.category">
+                <a-select-option value="专业基础课">专业基础课</a-select-option>
+                <a-select-option value="专业课">专业课</a-select-option>
+                <a-select-option value="公共课">公共课</a-select-option>
+                <a-select-option value="通识课">通识课</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="学分">
+              <a-input-number v-model:value="editForm.credits" :min="0" :step="0.5" style="width: 100%" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="总学时">
+              <a-input-number v-model:value="editForm.totalHours" :min="0" :step="8" style="width: 100%" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="状态">
+              <a-select v-model:value="editForm.status">
+                <a-select-option value="启用">启用</a-select-option>
+                <a-select-option value="停用">停用</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+        </a-row>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
@@ -68,6 +124,9 @@ export default {
         category: ''
       },
       loading: false,
+      editLoading: false,
+      showEditModal: false,
+      editForm: {},
       pagination: {
         current: 1,
         pageSize: 10,
@@ -124,13 +183,46 @@ export default {
       this.handleSearch();
     },
     showAddModal() {
-      this.$message.info('新增课程功能');
+      this.editForm = {
+        courseCode: '',
+        courseName: '',
+        category: '专业基础课',
+        credits: 2,
+        totalHours: 32,
+        status: '启用'
+      };
+      this.showEditModal = true;
     },
     viewCourse(course) {
       this.$message.info(`查看课程：${course.courseName}`);
     },
     editCourse(course) {
-      this.$message.info(`编辑课程：${course.courseName}`);
+      this.editForm = { ...course };
+      this.showEditModal = true;
+    },
+    async handleEditSubmit() {
+      this.editLoading = true;
+      try {
+        if (this.editForm.id) {
+          // TODO: 后端补充更新接口
+          this.$message.success('更新成功');
+        } else {
+          await courseApi.addCourse(this.editForm);
+          this.$message.success('新增成功');
+        }
+        this.showEditModal = false;
+        this.loadCourses();
+      } catch (error) {
+        console.error('保存失败:', error);
+        this.$message.error('保存失败');
+      } finally {
+        this.editLoading = false;
+      }
+    },
+    handleTableChange(pagination) {
+      this.pagination.current = pagination.current;
+      this.pagination.pageSize = pagination.pageSize;
+      this.loadCourses();
     },
     deleteCourse(course) {
       this.$confirm({

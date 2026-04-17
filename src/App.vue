@@ -86,6 +86,83 @@
               class="side-menu"
               @click="handleSideMenuClick"
             >
+              <!-- ============ 学生专属菜单 ============ -->
+              <template v-if="userRole === 'STUDENT'">
+                <!-- 学生首页 -->
+                <a-menu-item key="student-dashboard" v-if="checkPermission('my-profile')">
+                  <template #icon><HomeOutlined /></template>
+                  <span>首页</span>
+                </a-menu-item>
+                
+                <!-- 系统公告 -->
+                <a-menu-item key="system-notice" v-if="checkPermission('system-notice')">
+                  <template #icon><BellOutlined /></template>
+                  <span>系统公告</span>
+                </a-menu-item>
+                
+                <!-- 个人信息 -->
+                <a-menu-item key="my-profile" v-if="checkPermission('my-profile')">
+                  <template #icon><UserOutlined /></template>
+                  <span>个人信息</span>
+                </a-menu-item>
+                
+                <!-- 我的课程 -->
+                <a-sub-menu key="my-courses-group" v-if="checkPermission('my-courses')">
+                  <template #icon><BookOutlined /></template>
+                  <template #title><span>我的课程</span></template>
+                  <a-menu-item key="my-courses">
+                    <span>选课中心</span>
+                  </a-menu-item>
+                </a-sub-menu>
+                
+                <!-- 我的成绩 -->
+                <a-menu-item key="my-grades" v-if="checkPermission('my-grades')">
+                  <template #icon><BarChartOutlined /></template>
+                  <span>我的成绩</span>
+                </a-menu-item>
+                
+                <!-- 我的考勤 -->
+                <a-menu-item key="my-attendance" v-if="checkPermission('my-attendance')">
+                  <template #icon><ClockCircleOutlined /></template>
+                  <span>我的考勤</span>
+                </a-menu-item>
+                
+                <!-- 考试安排 -->
+                <a-menu-item key="my-exams" v-if="checkPermission('my-exams')">
+                  <template #icon><CalendarOutlined /></template>
+                  <span>考试安排</span>
+                </a-menu-item>
+                
+                <!-- 毕业设计 -->
+                <a-sub-menu key="my-thesis-group" v-if="checkPermission('my-thesis')">
+                  <template #icon><FileAddOutlined /></template>
+                  <template #title><span>毕业设计</span></template>
+                  <a-menu-item key="my-thesis">
+                    <span>我的毕设</span>
+                  </a-menu-item>
+                </a-sub-menu>
+                
+                <!-- 教学评价 -->
+                <a-menu-item key="my-evaluation" v-if="checkPermission('my-evaluation')">
+                  <template #icon><StarOutlined /></template>
+                  <span>教学评价</span>
+                </a-menu-item>
+                
+                <!-- 实习申请 -->
+                <a-menu-item key="my-internship" v-if="checkPermission('my-internship')">
+                  <template #icon><SolutionOutlined /></template>
+                  <span>实习申请</span>
+                </a-menu-item>
+                
+                <!-- 学业预警 -->
+                <a-menu-item key="my-warning" v-if="checkPermission('my-warning')">
+                  <template #icon><AlertOutlined /></template>
+                  <span>学业预警</span>
+                </a-menu-item>
+              </template>
+
+              <!-- ============ 管理员/教师菜单 ============ -->
+              <template v-else>
               <!-- 系统概览 -->
               <a-sub-menu key="dashboard-group" v-if="checkPermission('data-stats') || checkPermission('todo-list') || checkPermission('system-notice')">
                 <template #icon><DashboardOutlined /></template>
@@ -276,6 +353,7 @@
                   <span>系统日志</span>
                 </a-menu-item>
               </a-sub-menu>
+              </template>
             </a-menu>
           </a-layout-sider>
           
@@ -329,7 +407,11 @@
               <CourseChange v-if="currentComponent === 'CourseChange'" :key="contentKey + '-course-change'" :user="user" />
               <TeacherEvaluation v-if="currentComponent === 'TeacherEvaluation'" :key="contentKey + '-teacher-evaluation'" :user="user" />
               <InternshipManagement v-if="currentComponent === 'InternshipManagement'" :key="contentKey + '-internship-management'" :user="user" />
-              <Dashboard v-show="currentComponent !== 'DataStats' && currentComponent !== 'TodoList' && currentComponent !== 'SystemNotice' && currentComponent !== 'StudentArchives' && currentComponent !== 'StudentStatus' && currentComponent !== 'StudentPunishment' && currentComponent !== 'GraduationAudit' && currentComponent !== 'CourseLibrary' && currentComponent !== 'TrainingPlan' && currentComponent !== 'TeachingSchedule' && currentComponent !== 'CourseScheduling' && currentComponent !== 'TeacherManagement' && currentComponent !== 'TeachingTask' && currentComponent !== 'GradeManagement' && currentComponent !== 'CourseSelectionManagement' && currentComponent !== 'AttendanceManagement' && currentComponent !== 'ExamArrangement' && currentComponent !== 'InnovationManagement' && currentComponent !== 'ThesisManagement' && currentComponent !== 'UserManagement' && currentComponent !== 'RoleManagement' && currentComponent !== 'DataDictionary' && currentComponent !== 'SystemLog'" :key="contentKey + '-dashboard'" :user="user" />
+              
+              <!-- ============ 学生个人中心组件 ============ -->
+              <StudentDashboard v-if="currentComponent === 'StudentDashboard'" :key="contentKey + '-student-dashboard'" :user="user" @menu-change="handleQuickAccess" />
+              <MyProfile v-if="currentComponent === 'MyProfile'" :key="contentKey + '-my-profile'" :user="user" />
+              <Dashboard v-if="currentComponent === 'Dashboard' && userRole !== 'STUDENT'" :key="contentKey + '-dashboard'" :user="user" />
             </div>
           </a-layout-content>
         </a-layout>
@@ -389,6 +471,8 @@ import AcademicWarning from './components/AcademicWarning.vue';
 import CourseChange from './components/CourseChange.vue';
 import TeacherEvaluation from './components/TeacherEvaluation.vue';
 import InternshipManagement from './components/InternshipManagement.vue';
+import MyProfile from './components/MyProfile.vue';
+import StudentDashboard from './components/StudentDashboard.vue';
 import { hasPermission } from './utils/permission';
 import { 
   DownOutlined, 
@@ -488,6 +572,8 @@ export default {
     CourseChange,
     TeacherEvaluation,
     InternshipManagement,
+    MyProfile,
+    StudentDashboard,
     DownOutlined,
     LogoutOutlined,
     UserOutlined,
@@ -551,6 +637,18 @@ export default {
       contentKey: 0,
       // 菜单映射关系
       menuMap: {
+        // 学生菜单
+        'student-dashboard': { parent: '个人中心', child: '首页' },
+        'my-profile': { parent: '个人中心', child: '个人信息' },
+        'my-courses': { parent: '个人中心', child: '选课中心' },
+        'my-grades': { parent: '个人中心', child: '我的成绩' },
+        'my-attendance': { parent: '个人中心', child: '我的考勤' },
+        'my-exams': { parent: '个人中心', child: '考试安排' },
+        'my-thesis': { parent: '个人中心', child: '毕业设计' },
+        'my-evaluation': { parent: '个人中心', child: '教学评价' },
+        'my-internship': { parent: '个人中心', child: '实习申请' },
+        'my-warning': { parent: '个人中心', child: '学业预警' },
+        // 管理员/教师菜单
         'data-stats': { parent: '系统概览', child: '数据统计' },
         'todo-list': { parent: '系统概览', child: '待办事项' },
         'system-notice': { parent: '系统概览', child: '系统公告' },
@@ -638,6 +736,10 @@ export default {
         this.user = JSON.parse(userStr);
         this.userRole = this.user.role || 'SUPER_ADMIN'; // 从用户信息中获取角色
         this.isLoggedIn = true;
+        // 根据角色设置默认菜单
+        if (this.userRole === 'STUDENT') {
+          this.selectedSideMenu = 'student-dashboard';
+        }
         // 根据默认选中的菜单项设置组件
         this.handleSideMenuClick({ key: this.selectedSideMenu });
       }
@@ -654,6 +756,10 @@ export default {
       this.currentComponent = 'Dashboard';
     },
     // 检查是否有权限访问某个菜单项
+    handleQuickAccess(key) {
+      // 处理快捷入口点击，切换到对应菜单
+      this.handleSideMenuClick({ key });
+    },
     checkPermission(menuKey) {
       return hasPermission(this.userRole, menuKey);
     },
@@ -797,7 +903,47 @@ export default {
           case 'system-log':
             this.currentComponent = 'SystemLog';
             break;
-            
+          
+          // 学生个人中心
+          case 'student-dashboard':
+            this.currentComponent = 'StudentDashboard';
+            break;
+          case 'my-profile':
+            this.currentComponent = 'MyProfile';
+            break;
+          case 'my-courses':
+            // 暂时复用 CourseSelectionManagement，后续可创建 MyCourses 组件
+            this.currentComponent = 'CourseSelectionManagement';
+            break;
+          case 'my-grades':
+            // 暂时复用 GradeManagement，后续可创建 MyGrades 组件
+            this.currentComponent = 'GradeManagement';
+            break;
+          case 'my-attendance':
+            // 暂时复用 AttendanceManagement，后续可创建 MyAttendance 组件
+            this.currentComponent = 'AttendanceManagement';
+            break;
+          case 'my-exams':
+            // 暂时复用 ExamArrangement
+            this.currentComponent = 'ExamArrangement';
+            break;
+          case 'my-thesis':
+            // 暂时复用 ThesisManagement
+            this.currentComponent = 'ThesisManagement';
+            break;
+          case 'my-evaluation':
+            // 暂时复用 TeachingEvaluation
+            this.currentComponent = 'TeachingEvaluation';
+            break;
+          case 'my-internship':
+            // 暂时复用 InternshipManagement
+            this.currentComponent = 'InternshipManagement';
+            break;
+          case 'my-warning':
+            // 暂时复用 AcademicWarning
+            this.currentComponent = 'AcademicWarning';
+            break;
+          
           default:
             this.currentComponent = 'Dashboard';
         }

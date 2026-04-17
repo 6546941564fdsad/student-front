@@ -68,6 +68,41 @@
         </template>
       </a-table>
     </a-card>
+
+    <!-- 新增/编辑字典项弹窗 -->
+    <a-modal
+      v-model:open="showEditModal"
+      :title="editForm.id ? '编辑字典项' : '新增字典项'"
+      :confirm-loading="editLoading"
+      @ok="handleEditSubmit"
+    >
+      <a-form :model="editForm" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
+        <a-form-item label="字典类型" required>
+          <a-select v-model:value="editForm.dictType" placeholder="请选择字典类型">
+            <a-select-option value="gender">性别</a-select-option>
+            <a-select-option value="education_level">学历层次</a-select-option>
+            <a-select-option value="political_status">政治面貌</a-select-option>
+            <a-select-option value="exam_type">考试类型</a-select-option>
+            <a-select-option value="status">状态</a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="字典标签" required>
+          <a-input v-model:value="editForm.dictLabel" placeholder="请输入字典标签" />
+        </a-form-item>
+        <a-form-item label="字典键值" required>
+          <a-input v-model:value="editForm.dictValue" placeholder="请输入字典键值" />
+        </a-form-item>
+        <a-form-item label="排序">
+          <a-input-number v-model:value="editForm.sortOrder" :min="0" style="width: 100%" />
+        </a-form-item>
+        <a-form-item label="状态">
+          <a-switch v-model:checked="editForm.status" checked-children="启用" un-checked-children="禁用" />
+        </a-form-item>
+        <a-form-item label="备注">
+          <a-textarea v-model:value="editForm.remark" placeholder="请输入备注" :rows="3" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
@@ -154,6 +189,17 @@ export default {
         total: 0,
         showSizeChanger: true,
         showTotal: (total) => `共 ${total} 条`
+      },
+      showEditModal: false,
+      editLoading: false,
+      editForm: {
+        id: null,
+        dictType: '',
+        dictLabel: '',
+        dictValue: '',
+        sortOrder: 0,
+        status: true,
+        remark: ''
       }
     };
   },
@@ -197,13 +243,42 @@ export default {
       this.handleSearch();
     },
     handleAdd() {
-      this.$message.info('新增字典项功能开发中');
+      this.editForm = {
+        id: null,
+        dictType: '',
+        dictLabel: '',
+        dictValue: '',
+        sortOrder: 0,
+        status: true,
+        remark: ''
+      };
+      this.showEditModal = true;
     },
     handleRefresh() {
       this.$message.success('缓存刷新成功');
     },
     handleEdit(record) {
-      this.$message.info(`编辑字典项：${record.dictLabel}`);
+      this.editForm = { ...record };
+      this.showEditModal = true;
+    },
+    async handleEditSubmit() {
+      this.editLoading = true;
+      try {
+        if (this.editForm.id) {
+          await dataDictionaryApi.updateDictionary(this.editForm.id, this.editForm);
+          this.$message.success('更新成功');
+        } else {
+          await dataDictionaryApi.addDictionary(this.editForm);
+          this.$message.success('新增成功');
+        }
+        this.showEditModal = false;
+        this.loadDictionaries();
+      } catch (error) {
+        console.error('保存失败:', error);
+        this.$message.error('保存失败');
+      } finally {
+        this.editLoading = false;
+      }
     },
     async handleDelete(record) {
       try {

@@ -163,7 +163,7 @@
 </template>
 
 <script>
-import { studentApi } from '../api/student';
+import studentApi from '../api/student';
 import StudentForm from './StudentForm.vue';
 import { 
   PlusOutlined, 
