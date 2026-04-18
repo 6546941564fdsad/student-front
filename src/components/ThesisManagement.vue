@@ -215,11 +215,13 @@ export default {
         };
         const res = await projectApi.getAll(params.page, params.size);
         if (res.data.success) {
-          this.theses = res.data.data.map((item, index) => ({
+          // 后端返回的数据结构: { success: true, data: { content: [...], totalElements: ..., ... } }
+          const pageData = res.data.data;
+          this.theses = (pageData.content || []).map((item, index) => ({
             ...item,
             index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
           }));
-          this.pagination.total = res.data.total;
+          this.pagination.total = pageData.totalElements || 0;
         }
       } catch (error) {
         console.error('加载毕业设计数据失败:', error);

@@ -191,20 +191,31 @@ export default {
     async loadExams() {
       this.loading = true;
       try {
-        const params = {
-          page: this.pagination.current - 1,
-          size: this.pagination.pageSize,
-          semester: this.filters.semester || undefined,
-          courseName: this.filters.courseName || undefined,
-          examType: this.filters.examType || undefined
-        };
-        const res = await examArrangementApi.getExams(params);
+        const res = await examArrangementApi.getExams();
         if (res.data.success) {
-          this.exams = res.data.data.map((item, index) => ({
+          let exams = res.data.data || [];
+          
+          // 前端筛选
+          if (this.filters.semester) {
+            exams = exams.filter(exam => exam.semester === this.filters.semester);
+          }
+          if (this.filters.courseName) {
+            exams = exams.filter(exam => exam.courseName && exam.courseName.includes(this.filters.courseName));
+          }
+          if (this.filters.examType) {
+            exams = exams.filter(exam => exam.examType === this.filters.examType);
+          }
+          
+          // 分页处理
+          const start = (this.pagination.current - 1) * this.pagination.pageSize;
+          const end = start + this.pagination.pageSize;
+          const paginatedExams = exams.slice(start, end);
+          
+          this.exams = paginatedExams.map((item, index) => ({
             ...item,
-            index: (this.pagination.current - 1) * this.pagination.pageSize + index + 1
+            index: start + index + 1
           }));
-          this.pagination.total = res.data.total;
+          this.pagination.total = exams.length;
         }
       } catch (error) {
         console.error('加载考试安排失败:', error);
