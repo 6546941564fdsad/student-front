@@ -36,9 +36,9 @@
               <a-sub-menu key="more">
                 <template #icon><MoreOutlined /></template>
                 <template #title><span>更多</span></template>
-                <a-menu-item key="theme">
+                <a-menu-item key="theme" @click="toggleTheme">
                   <template #icon><ExperimentOutlined /></template>
-                  <span>主题</span>
+                  <span>{{ themeMode === 'light' ? '深色模式' : '浅色模式' }}</span>
                 </a-menu-item>
                 <a-menu-item key="history">
                   <template #icon><ClockOutlined /></template>
@@ -411,6 +411,9 @@
               <!-- ============ 学生个人中心组件 ============ -->
               <StudentDashboard v-if="currentComponent === 'StudentDashboard'" :key="contentKey + '-student-dashboard'" :user="user" @menu-change="handleQuickAccess" />
               <MyProfile v-if="currentComponent === 'MyProfile'" :key="contentKey + '-my-profile'" :user="user" />
+              <MyGrades v-if="currentComponent === 'MyGrades'" :key="contentKey + '-my-grades'" :user="user" />
+              <MyAttendance v-if="currentComponent === 'MyAttendance'" :key="contentKey + '-my-attendance'" :user="user" />
+              <MyCourses v-if="currentComponent === 'MyCourses'" :key="contentKey + '-my-courses'" :user="user" />
               <Dashboard v-if="currentComponent === 'Dashboard' && userRole !== 'STUDENT'" :key="contentKey + '-dashboard'" :user="user" />
             </div>
           </a-layout-content>
@@ -473,7 +476,11 @@ import TeacherEvaluation from './components/TeacherEvaluation.vue';
 import InternshipManagement from './components/InternshipManagement.vue';
 import MyProfile from './components/MyProfile.vue';
 import StudentDashboard from './components/StudentDashboard.vue';
+import MyGrades from './components/MyGrades.vue';
+import MyAttendance from './components/MyAttendance.vue';
+import MyCourses from './components/MyCourses.vue';
 import { hasPermission } from './utils/permission';
+import { themeMode, toggleTheme } from './utils/theme';
 import { 
   DownOutlined, 
   LogoutOutlined,
@@ -574,6 +581,9 @@ export default {
     InternshipManagement,
     MyProfile,
     StudentDashboard,
+    MyGrades,
+    MyAttendance,
+    MyCourses,
     DownOutlined,
     LogoutOutlined,
     UserOutlined,
@@ -635,6 +645,7 @@ export default {
       collapsed: false,
       currentComponent: 'Dashboard',
       contentKey: 0,
+      themeMode, // 主题模式（响应式）
       // 菜单映射关系
       menuMap: {
         // 学生菜单
@@ -912,16 +923,13 @@ export default {
             this.currentComponent = 'MyProfile';
             break;
           case 'my-courses':
-            // 暂时复用 CourseSelectionManagement，后续可创建 MyCourses 组件
-            this.currentComponent = 'CourseSelectionManagement';
+            this.currentComponent = 'MyCourses';
             break;
           case 'my-grades':
-            // 暂时复用 GradeManagement，后续可创建 MyGrades 组件
-            this.currentComponent = 'GradeManagement';
+            this.currentComponent = 'MyGrades';
             break;
           case 'my-attendance':
-            // 暂时复用 AttendanceManagement，后续可创建 MyAttendance 组件
-            this.currentComponent = 'AttendanceManagement';
+            this.currentComponent = 'MyAttendance';
             break;
           case 'my-exams':
             // 暂时复用 ExamArrangement
@@ -951,6 +959,13 @@ export default {
         // 设置完组件后增加 contentKey，强制重新渲染
         this.contentKey++;
       });
+    },
+    
+    /**
+     * 切换主题模式
+     */
+    toggleTheme() {
+      toggleTheme();
     }
   }
 };

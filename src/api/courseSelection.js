@@ -1,15 +1,40 @@
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:8080/api/course-selections';
+import request from './axios';
 
 export const courseSelectionApi = {
+  // 获取可选课程列表
+  getAvailableCourses(params) {
+    return request.get('/courses', { params });
+  },
+  
+  // 获取已选课程列表
+  getSelectedCourses(params) {
+    return request.get('/course-selections', { params });
+  },
+  
+  // 选课
+  selectCourse(data) {
+    return request.post('/course-selections', data);
+  },
+  
+  // 退课
+  dropCourse(id) {
+    return request.delete(`/course-selections/${id}`);
+  },
+  
+  // 获取所有选课记录（管理端用）
   getSelections(params) {
-    return axios.get(API_BASE_URL, { params });
+    return request.get('/course-selections', { params });
   },
+  
+  // 添加选课记录（管理端用）
   addSelection(selection) {
-    return axios.post(API_BASE_URL, selection);
+    return request.post('/course-selections', selection);
   },
+  
+  // 删除选课记录（管理端用）
   deleteSelection(id) {
-    return axios.delete(`${API_BASE_URL}/${id}`);
+    return request.delete(`/course-selections/${id}`);
   }
 };
+
+export default courseSelectionApi;
